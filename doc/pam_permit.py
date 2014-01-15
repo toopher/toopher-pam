@@ -1,1 +1,0 @@
-../examples/pam_permit.py
