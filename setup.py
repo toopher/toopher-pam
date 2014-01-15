@@ -8,6 +8,8 @@ except ImportError:
 import sys
 import os 
 
+from ctypes.util import find_library
+
 long_description = """\
 Embeds the Python interpreter into PAM \
 so PAM modules can be written in Python"""
@@ -28,7 +30,10 @@ if not os.environ.has_key("Py_DEBUG"):
 else:
   Py_DEBUG = [('Py_DEBUG',1)]
 
-libpython_so = ('libpython%d.%d.so.1') % sys.version_info[:2]
+libpython_so = find_library("python%d.%d" % sys.version_info[:2])
+if not libpython_so:
+    "libpython%d.%d.so.1" % sys.version_info[:2]
+
 ext_modules = [
     Extension(
       "pam_toopher",
