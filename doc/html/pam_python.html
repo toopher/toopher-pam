@@ -1,0 +1,662 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>pam_python &mdash; pam_python 1.0.2 documentation</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '',
+        VERSION:     '1.0.2',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="pam_python 1.0.2 documentation" href="index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li><a href="#">pam_python 1.0.2 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="pam-python">
+<h1><cite>pam_python</cite><a class="headerlink" href="#pam-python" title="Permalink to this headline">¶</a></h1>
+<div class="toctree-wrapper compound">
+<ul class="simple">
+</ul>
+</div>
+<div class="topic">
+<p class="topic-title first">Abstract</p>
+<p><cite>pam_python</cite> is a PAM module that runs the Python interpreter, and so
+allows PAM modules to be written in Python.</p>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Author:</th><td class="field-body">Russell Stuart &lt;<a class="reference external" href="mailto:russell-pampython&#37;&#52;&#48;stuart&#46;id&#46;au">russell-pampython<span>&#64;</span>stuart<span>&#46;</span>id<span>&#46;</span>au</a>&gt;</td>
+</tr>
+</tbody>
+</table>
+<div class="section" id="introduction">
+<span id="intro"></span><h2>Introduction<a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h2>
+<p>The <cite>pam_python</cite> PAM module runs the Python source file (aka Python PAM
+module) it is given in the Python interpreter, making the PAM module API
+available to it. This document describes the how the PAM Module API is exposed
+to the Python PAM module. It does not describe how to use the API. You must read
+the <a class="reference external" href="http://www.kernel.org/pub/linux/libs/pam/Linux-PAM-html">PAM Module Writers Guide</a> to learn how to do that. To re-iterate: this
+document does not tell you how to write PAM modules, it only tells you how to
+access the PAM module API from Python.</p>
+<p>Writing PAM modules from Python incurs a large performance penalty and requires
+Python to be installed, so it is not the best option for writing modules that
+will be used widely. On the other hand memory allocation / corruption problems
+can not be caused by bad Python code, and a Python module is generally shorter
+and easier to write than its C equivalent. This makes it ideal for the system
+administrator who just wants to make use of the the PAM API for his own ends
+while minimising the risk of introducing memory corruption problems into every
+program using PAM.</p>
+</div>
+<div class="section" id="configuring-pam">
+<span id="configuring"></span><h2>Configuring PAM<a class="headerlink" href="#configuring-pam" title="Permalink to this headline">¶</a></h2>
+<p>Tell PAM to use a Python PAM module in the usual way: add a rule to your PAM
+configuration. The PAM administrators manual gives the syntax of a rule as:</p>
+<div class="highlight-python"><pre>service type control module-path module-arguments</pre>
+</div>
+<p>The first three parameters are the same for all PAM modules and so aren&#8217;t any
+different for <cite>pam_python</cite>. The <em>module-path</em> is the path to pam_python.so.
+Like all paths PAM modules it is relative to the default PAM module directory so
+is usually just the string <tt class="docutils literal"><span class="pre">pam_python.so</span></tt>. The first <em>module-argument</em> is the
+path to the Python PAM module. If it doesn&#8217;t start with a / it is relative to
+the <tt class="docutils literal"><span class="pre">/lib/security</span></tt>. All <em>module-arguments</em>, including the path name to the
+Python PAM module are passed to it.</p>
+</div>
+<div class="section" id="python-pam-modules">
+<span id="module"></span><h2>Python PAM modules<a class="headerlink" href="#python-pam-modules" title="Permalink to this headline">¶</a></h2>
+<p>When a PAM handle created by the applications call to PAM&#8217;s <tt class="samp docutils literal"><span class="pre">pam_start()</span></tt>
+function first uses a Python PAM module, <cite>pam_python</cite> invokes it using Python&#8217;s
+<tt class="docutils literal"><span class="pre">execfile</span></tt> function.   The following variables are passed to the invoked
+module in its global namespace:</p>
+<dl class="data">
+<dt id="__builtins__">
+<tt class="descname">__builtins__</tt><a class="headerlink" href="#__builtins__" title="Permalink to this definition">¶</a></dt>
+<dd><p>The usual Python <tt class="docutils literal"><span class="pre">__builtins__</span></tt>.</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="__file__">
+<tt class="descname">__file__</tt><a class="headerlink" href="#__file__" title="Permalink to this definition">¶</a></dt>
+<dd><p>The absolute path name to the Python PAM module.</p>
+</dd></dl>
+
+<p>As described in the PAM Module Writers Guide, PAM interacts with your module by calling methods
+you provide in it. Each <tt class="docutils literal"><span class="pre">type</span></tt> in the PAM configuration rules results in one
+or more methods being called. The Python PAM module must define the methods that
+will be called by each rule <tt class="docutils literal"><span class="pre">type</span></tt> it can be used with. Those methods are:</p>
+<dl class="function">
+<dt id="pam_sm_acct_mgmt">
+<tt class="descname">pam_sm_acct_mgmt</tt><big>(</big><em>pamh</em>, <em>flags</em>, <em>args</em><big>)</big><a class="headerlink" href="#pam_sm_acct_mgmt" title="Permalink to this definition">¶</a></dt>
+<dd><p>The service module&#8217;s implementation of PAM&#8217;s <em class="manpage">pam_acct_mgmt(3)</em> interface.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pam_sm_authenticate">
+<tt class="descname">pam_sm_authenticate</tt><big>(</big><em>pamh</em>, <em>flags</em>, <em>args</em><big>)</big><a class="headerlink" href="#pam_sm_authenticate" title="Permalink to this definition">¶</a></dt>
+<dd><p>The service module&#8217;s implementation of PAM&#8217;s <em class="manpage">pam_authenticate(3)</em>
+interface.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pam_sm_close_session">
+<tt class="descname">pam_sm_close_session</tt><big>(</big><em>pamh</em>, <em>flags</em>, <em>args</em><big>)</big><a class="headerlink" href="#pam_sm_close_session" title="Permalink to this definition">¶</a></dt>
+<dd><p>The service module&#8217;s implementation of PAM&#8217;s <em class="manpage">pam_close_session(3)</em>
+interface.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pam_sm_chauthtok">
+<tt class="descname">pam_sm_chauthtok</tt><big>(</big><em>pamh</em>, <em>flags</em>, <em>args</em><big>)</big><a class="headerlink" href="#pam_sm_chauthtok" title="Permalink to this definition">¶</a></dt>
+<dd><p>The service module&#8217;s implementation of PAM&#8217;s <em class="manpage">pam_chauthtok(3)</em> interface.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pam_sm_open_session">
+<tt class="descname">pam_sm_open_session</tt><big>(</big><em>pamh</em>, <em>flags</em>, <em>args</em><big>)</big><a class="headerlink" href="#pam_sm_open_session" title="Permalink to this definition">¶</a></dt>
+<dd><p>The service module&#8217;s implementation of PAM&#8217;s <em class="manpage">pam_open_session(3)</em>
+interface.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pam_sm_setcred">
+<tt class="descname">pam_sm_setcred</tt><big>(</big><em>pamh</em>, <em>flags</em>, <em>args</em><big>)</big><a class="headerlink" href="#pam_sm_setcred" title="Permalink to this definition">¶</a></dt>
+<dd><p>The service module&#8217;s implementation of PAM&#8217;s <em class="manpage">pam_setcred(3)</em> interface.</p>
+</dd></dl>
+
+<p>The arguments and return value of all these methods are the same. The <em>pamh</em>
+parameter is an instance of the <tt class="xref py py-class docutils literal"><span class="pre">PamHandle</span></tt> class. It is used to interact
+with PAM and is described in the next section. The remaining arguments are as
+described in the PAM Module Writers Guide. All functions must return an integer,
+eg <tt class="xref py py-const docutils literal"><span class="pre">pamh.PAM_SUCCESS</span></tt>. The valid return codes for each function are
+defined PAM Module Writers Guide.   If the Python method isn&#8217;t present
+<cite>pam_python</cite> will return <tt class="xref py py-const docutils literal"><span class="pre">pamh.PAM_SYMBOL_ERR</span></tt> to PAM; if the method
+or doesn&#8217;t return an integer or throws an exception
+<tt class="xref py py-const docutils literal"><span class="pre">pamh.PAM_SERVICE_ERR</span></tt> is returned.</p>
+<p>There is one other method that in the Python PAM module
+that may be called by <cite>pam_python</cite>.
+It is optional:</p>
+<dl class="function">
+<dt id="pam_sm_end">
+<tt class="descname">pam_sm_end</tt><big>(</big><em>pamh</em><big>)</big><a class="headerlink" href="#pam_sm_end" title="Permalink to this definition">¶</a></dt>
+<dd><p>If present this will be called when the application calls PAM&#8217;s
+<em class="manpage">pam_end(3)</em> function.
+If not present nothing happens.
+The parameter <em>pamh</em> is the <tt class="xref py py-class docutils literal"><span class="pre">PamHandle</span></tt> object.
+The return value is ignored.</p>
+</dd></dl>
+
+</div>
+<div class="section" id="the-pamhandle-class">
+<span id="pamhandle"></span><h2>The PamHandle Class<a class="headerlink" href="#the-pamhandle-class" title="Permalink to this headline">¶</a></h2>
+<p>An instance of this class is automatically created for a Python PAM module when
+it is first referenced, (ie when it is <tt class="docutils literal"><span class="pre">execfile</span></tt>&#8216;ed). It is the first
+argument to every Python method called by PAM. It is destroyed automatically
+when PAM&#8217;s <tt class="xref c c-func docutils literal"><span class="pre">pam_end()</span></tt> is called, right after the <tt class="docutils literal"><span class="pre">execfile</span></tt>&#8216;ed
+module is destroyed. If any method fails, or any access to a member fails a
+<tt class="xref py py-exc docutils literal"><span class="pre">PamHandle.exception</span></tt> exception will be thrown. It contains the following
+members:</p>
+<dl class="data">
+<dt>
+<tt class="descname">PAM_???</tt></dt>
+<dd><p>All the <tt class="xref py py-const docutils literal"><span class="pre">PAM_???</span></tt> constants defined in the PAM include files
+version 1.1.1 are available. They are all read-only <tt class="xref py py-class docutils literal"><span class="pre">int</span></tt>&#8216;s.</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="authtok">
+<tt class="descname">authtok</tt><a class="headerlink" href="#authtok" title="Permalink to this definition">¶</a></dt>
+<dd><p>The <tt class="xref py py-const docutils literal"><span class="pre">PAM_AUTHTOK</span></tt> PAM item. Reading this results in a call
+to the PAM library function <tt class="samp docutils literal"><span class="pre">pam_get_item(PAM_AUTHTOK)</span></tt>, writing it
+results in a call <tt class="samp docutils literal"><span class="pre">pam_set_item(PAM_AUTHTOK,</span> <span class="pre">value)</span></tt>. Its
+value will be either a <tt class="xref py py-class docutils literal"><span class="pre">string</span></tt> or <tt class="xref py py-const docutils literal"><span class="pre">None</span></tt> for the C
+value <tt class="xref c c-macro docutils literal"><span class="pre">NULL</span></tt>.</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="authtok_type">
+<tt class="descname">authtok_type</tt><a class="headerlink" href="#authtok_type" title="Permalink to this definition">¶</a></dt>
+<dd><p>The <tt class="xref py py-const docutils literal"><span class="pre">PAM_AUTHTOK_TYPE</span></tt> PAM item. Reading this results in a call
+to the PAM library function <tt class="samp docutils literal"><span class="pre">pam_get_item(PAM_AUTHTOK_TYPE)</span></tt>, writing it
+results in a call <tt class="samp docutils literal"><span class="pre">pam_set_item(PAM_AUTHTOK_TYPE,</span> <span class="pre">value)</span></tt>. Its
+value will be either a <tt class="xref py py-class docutils literal"><span class="pre">string</span></tt> or <tt class="xref py py-const docutils literal"><span class="pre">None</span></tt> for the C
+value <tt class="xref c c-macro docutils literal"><span class="pre">NULL</span></tt>.
+New in version 1.0.0.
+Only present if the version of PAM <cite>pam_python</cite> is compiled with supports it.</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="env">
+<tt class="descname">env</tt><a class="headerlink" href="#env" title="Permalink to this definition">¶</a></dt>
+<dd><p>This is a mapping representing the PAM environment. <cite>pam_python</cite> implements
+accesses and changes to it via the PAM library function <tt class="samp docutils literal"><span class="pre">pam_getenv()</span></tt>,
+<tt class="samp docutils literal"><span class="pre">pam_putenv()</span></tt> and <tt class="samp docutils literal"><span class="pre">pam_getenvlist()</span></tt>. The PAM environment
+only supports <tt class="xref py py-class docutils literal"><span class="pre">string</span></tt> keys and values, and the keys may not be
+blank nor contain &#8216;=&#8217;.</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="exception">
+<tt class="descname">exception</tt><a class="headerlink" href="#exception" title="Permalink to this definition">¶</a></dt>
+<dd><p>The exception raised by methods defined here if they fail. It is a
+subclass of <tt class="xref py py-class docutils literal"><span class="pre">StandardError</span></tt>. Instances contain the member
+<tt class="xref py py-const docutils literal"><span class="pre">pam_result</span></tt>, which is the error code returned by PAM. The
+description is the PAM error message.</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="libpam_version">
+<tt class="descname">libpam_version</tt><a class="headerlink" href="#libpam_version" title="Permalink to this definition">¶</a></dt>
+<dd><p>The version of PAM <cite>pam_python</cite> was compiled with. This is a
+<tt class="xref py py-class docutils literal"><span class="pre">string</span></tt>. In version 0.1.0 of <cite>pam_python</cite> and prior this was an
+<tt class="xref py py-class docutils literal"><span class="pre">int</span></tt> holding the version of PAM library loaded. Newer versions of
+PAM no longer export that value.</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="pamh">
+<tt class="descname">pamh</tt><a class="headerlink" href="#pamh" title="Permalink to this definition">¶</a></dt>
+<dd><p>The PAM handle, as read-only <tt class="xref py py-class docutils literal"><span class="pre">int</span></tt>. Possibly useful during debugging.</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="py_initialized">
+<tt class="descname">py_initialized</tt><a class="headerlink" href="#py_initialized" title="Permalink to this definition">¶</a></dt>
+<dd><p>A read-only <tt class="xref py py-class docutils literal"><span class="pre">int</span></tt>.
+If the Python interpreter was initialised
+before the <cite>pam_python</cite> module was created this is 0.
+Otherwise it is 1, meaning <cite>pam_python</cite> has called <a class="reference external" href="http://docs.python.org/2.7/c-api/init.html#Py_Initialize" title="(in Python v2.7)"><tt class="xref c c-func docutils literal"><span class="pre">Py_Initialize()</span></tt></a>
+and will call <a class="reference external" href="http://docs.python.org/2.7/c-api/init.html#Py_Finalize" title="(in Python v2.7)"><tt class="xref c c-func docutils literal"><span class="pre">Py_Finalize()</span></tt></a>
+when the last <cite>pam_python</cite> module is destroyed.</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="oldauthtok">
+<tt class="descname">oldauthtok</tt><a class="headerlink" href="#oldauthtok" title="Permalink to this definition">¶</a></dt>
+<dd><p>The <tt class="xref py py-const docutils literal"><span class="pre">PAM_OLDAUTHTOK</span></tt> PAM item. Reading this results in a call
+to the PAM library function <tt class="samp docutils literal"><span class="pre">pam_get_item(PAM_OLDAUTHTOK)</span></tt>,
+writing it results in a call <tt class="samp docutils literal"><span class="pre">pam_set_item(PAM_OLDAUTHTOK,</span> <span class="pre">value)</span></tt>.
+Its value will be either a <tt class="xref py py-class docutils literal"><span class="pre">string</span></tt> or <tt class="xref py py-const docutils literal"><span class="pre">None</span></tt> for the
+C value <tt class="xref c c-macro docutils literal"><span class="pre">NULL</span></tt>.</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="rhost">
+<tt class="descname">rhost</tt><a class="headerlink" href="#rhost" title="Permalink to this definition">¶</a></dt>
+<dd><p>The <tt class="xref py py-const docutils literal"><span class="pre">PAM_RHOST</span></tt> PAM item. Reading this results in a call
+to the PAM library function <tt class="samp docutils literal"><span class="pre">pam_get_item(PAM_RHOST)</span></tt>,
+writing it results in a call <tt class="samp docutils literal"><span class="pre">pam_set_item(PAM_RHOST,</span> <span class="pre">value)</span></tt>.
+Its value will be either a <tt class="xref py py-class docutils literal"><span class="pre">string</span></tt>
+or <tt class="xref py py-const docutils literal"><span class="pre">None</span></tt> for the C value <tt class="xref c c-macro docutils literal"><span class="pre">NULL</span></tt>.</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="ruser">
+<tt class="descname">ruser</tt><a class="headerlink" href="#ruser" title="Permalink to this definition">¶</a></dt>
+<dd><p>The <tt class="xref py py-const docutils literal"><span class="pre">PAM_RUSER</span></tt> PAM item. Reading this results in a call
+to the PAM library function <tt class="samp docutils literal"><span class="pre">pam_get_item(PAM_RUSER)</span></tt>,
+writing it results in a call <tt class="samp docutils literal"><span class="pre">pam_set_item(PAM_RUSER,</span> <span class="pre">value)</span></tt>.
+Its value will be either a <tt class="xref py py-class docutils literal"><span class="pre">string</span></tt>
+or <tt class="xref py py-const docutils literal"><span class="pre">None</span></tt> for the C value <tt class="xref c c-macro docutils literal"><span class="pre">NULL</span></tt>.</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="service">
+<tt class="descname">service</tt><a class="headerlink" href="#service" title="Permalink to this definition">¶</a></dt>
+<dd><p>The <tt class="xref py py-const docutils literal"><span class="pre">PAM_SERVICE</span></tt> PAM item. Reading this results in a call
+to the PAM library function <tt class="samp docutils literal"><span class="pre">pam_get_item(PAM_SERVICE)</span></tt>,
+writing it results in a call <tt class="samp docutils literal"><span class="pre">pam_set_item(PAM_SERVICE,</span> <span class="pre">value)</span></tt>.
+Its value will be either a <tt class="xref py py-class docutils literal"><span class="pre">string</span></tt>
+or <tt class="xref py py-const docutils literal"><span class="pre">None</span></tt> for the C value <tt class="xref c c-macro docutils literal"><span class="pre">NULL</span></tt>.</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="tty">
+<tt class="descname">tty</tt><a class="headerlink" href="#tty" title="Permalink to this definition">¶</a></dt>
+<dd><p>The <tt class="xref py py-const docutils literal"><span class="pre">PAM_TTY</span></tt> PAM item. Reading this results in a call
+to the PAM library function <tt class="samp docutils literal"><span class="pre">pam_get_item(PAM_TTY)</span></tt>,
+writing it results in a call <tt class="samp docutils literal"><span class="pre">pam_set_item(PAM_TTY,</span> <span class="pre">value)</span></tt>.
+Its value will be either a <tt class="xref py py-class docutils literal"><span class="pre">string</span></tt>
+or <tt class="xref py py-const docutils literal"><span class="pre">None</span></tt> for the C value <tt class="xref c c-macro docutils literal"><span class="pre">NULL</span></tt>.</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="user">
+<tt class="descname">user</tt><a class="headerlink" href="#user" title="Permalink to this definition">¶</a></dt>
+<dd><p>The <tt class="xref py py-const docutils literal"><span class="pre">PAM_USER</span></tt> PAM item. Reading this results in a call
+to the PAM library function <tt class="samp docutils literal"><span class="pre">pam_get_item(PAM_USER)</span></tt>,
+writing it results in a call <tt class="samp docutils literal"><span class="pre">pam_set_item(PAM_USER,</span> <span class="pre">value)</span></tt>.
+Its value will be either a <tt class="xref py py-class docutils literal"><span class="pre">string</span></tt>
+or <tt class="xref py py-const docutils literal"><span class="pre">None</span></tt> for the C value <tt class="xref c c-macro docutils literal"><span class="pre">NULL</span></tt>.</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="user_prompt">
+<tt class="descname">user_prompt</tt><a class="headerlink" href="#user_prompt" title="Permalink to this definition">¶</a></dt>
+<dd><p>The <tt class="xref py py-const docutils literal"><span class="pre">PAM_USER_PROMPT</span></tt> PAM item. Reading this results in a call
+to the PAM library function <tt class="samp docutils literal"><span class="pre">pam_get_item(PAM_USER_PROMPT)</span></tt>,
+writing it results in a call <tt class="samp docutils literal"><span class="pre">pam_set_item(PAM_USER_PROMPT,</span> <span class="pre">value)</span></tt>.
+Its value will be either a <tt class="xref py py-class docutils literal"><span class="pre">string</span></tt>
+or <tt class="xref py py-const docutils literal"><span class="pre">None</span></tt> for the C value <tt class="xref c c-macro docutils literal"><span class="pre">NULL</span></tt>.</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="xauthdata">
+<tt class="descname">xauthdata</tt><a class="headerlink" href="#xauthdata" title="Permalink to this definition">¶</a></dt>
+<dd><p>The <tt class="xref py py-const docutils literal"><span class="pre">PAM_XAUTHDATA</span></tt> PAM item. Reading this results in a call
+to the PAM library function <tt class="samp docutils literal"><span class="pre">pam_get_item(PAM_XAUTHDATA)</span></tt>,
+writing it results in a call <tt class="samp docutils literal"><span class="pre">pam_set_item(PAM_XAUTHDATA,</span> <span class="pre">value)</span></tt>.
+Its value is a <tt class="xref py py-class docutils literal"><span class="pre">XAuthData</span></tt> instance.  When setting its value you
+don&#8217;t have to use an actual <tt class="xref py py-class docutils literal"><span class="pre">XAuthData</span></tt> instance,
+any class that contains a <tt class="xref py py-class docutils literal"><span class="pre">string</span></tt> member <tt class="xref py py-attr docutils literal"><span class="pre">name</span></tt>
+and a <tt class="xref py py-class docutils literal"><span class="pre">string</span></tt> member <tt class="xref py py-attr docutils literal"><span class="pre">data</span></tt> will do.
+New in version 1.0.0.
+Only present if the version of PAM <cite>pam_python</cite> is compiled with supports it.</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="xdisplay">
+<tt class="descname">xdisplay</tt><a class="headerlink" href="#xdisplay" title="Permalink to this definition">¶</a></dt>
+<dd><p>The <tt class="xref py py-const docutils literal"><span class="pre">PAM_XDISPLAY</span></tt> PAM item. Reading this results in a call
+to the PAM library function <tt class="samp docutils literal"><span class="pre">pam_get_item(PAM_XDISPLAY)</span></tt>,
+writing it results in a call <tt class="samp docutils literal"><span class="pre">pam_set_item(PAM_XDISPLAY,</span> <span class="pre">value)</span></tt>.
+Its value will be either a <tt class="xref py py-class docutils literal"><span class="pre">string</span></tt>
+or <tt class="xref py py-const docutils literal"><span class="pre">None</span></tt> for the C value <tt class="xref c c-macro docutils literal"><span class="pre">NULL</span></tt>.
+New in version 1.0.0.
+Only present if the version of PAM <cite>pam_python</cite> is compiled with supports it.</p>
+</dd></dl>
+
+<p>The following methods are available:</p>
+<dl class="method">
+<dt id="PamHandle.Message">
+<tt class="descclassname">PamHandle.</tt><tt class="descname">Message</tt><big>(</big><em>msg_style</em>, <em>msg</em><big>)</big><a class="headerlink" href="#PamHandle.Message" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates an instance of the <a class="reference internal" href="#PamHandle.Message" title="PamHandle.Message"><tt class="xref py py-class docutils literal"><span class="pre">Message</span></tt></a> class.
+The arguments become the instance members of the same name.
+This class is used to represent the C API&#8217;s <tt class="docutils literal"><span class="pre">struct</span> <span class="pre">pam_message</span></tt> type.
+An instance has two members corresponding
+to the C structure members of the same name:
+<tt class="xref py py-attr docutils literal"><span class="pre">msg_style</span></tt> an <tt class="xref py py-class docutils literal"><span class="pre">int</span></tt>
+and <tt class="xref py py-attr docutils literal"><span class="pre">data</span></tt> a <tt class="xref py py-class docutils literal"><span class="pre">string</span></tt>.
+Instances are immutable.
+Instances of this class can be passed to the <a class="reference internal" href="#PamHandle.conversation" title="PamHandle.conversation"><tt class="xref py py-meth docutils literal"><span class="pre">conversation()</span></tt></a> method.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="PamHandle.Response">
+<tt class="descclassname">PamHandle.</tt><tt class="descname">Response</tt><big>(</big><em>resp</em>, <em>ret_code</em><big>)</big><a class="headerlink" href="#PamHandle.Response" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates an instance of the <a class="reference internal" href="#PamHandle.Response" title="PamHandle.Response"><tt class="xref py py-class docutils literal"><span class="pre">Response</span></tt></a> class.
+The arguments become the instance members of the same name.
+This class is used to represent the C API&#8217;s <tt class="docutils literal"><span class="pre">struct</span> <span class="pre">pam_response</span></tt> type.
+An instance has two members
+corresponding to the C structure members of the same name:
+<tt class="xref py py-attr docutils literal"><span class="pre">resp</span></tt> a <tt class="xref py py-class docutils literal"><span class="pre">string</span></tt>
+and <tt class="xref py py-attr docutils literal"><span class="pre">ret_code</span></tt> an <tt class="xref py py-class docutils literal"><span class="pre">int</span></tt>.
+Instances are immutable.
+Instances of this class are returned by the <a class="reference internal" href="#PamHandle.conversation" title="PamHandle.conversation"><tt class="xref py py-meth docutils literal"><span class="pre">conversation()</span></tt></a> method.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="PamHandle.XAuthData">
+<tt class="descclassname">PamHandle.</tt><tt class="descname">XAuthData</tt><big>(</big><em>name</em>, <em>data</em><big>)</big><a class="headerlink" href="#PamHandle.XAuthData" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates an instance of the <a class="reference internal" href="#PamHandle.XAuthData" title="PamHandle.XAuthData"><tt class="xref py py-class docutils literal"><span class="pre">XAuthData</span></tt></a> class.
+The arguments become the instance members of the same name.
+This class is used to represent the C API&#8217;s <tt class="docutils literal"><span class="pre">struct</span> <span class="pre">pam_xauth_data</span></tt> type.
+An instance has two members
+corresponding to the C structure members of the same name:
+<tt class="xref py py-attr docutils literal"><span class="pre">name</span></tt> a <tt class="xref py py-class docutils literal"><span class="pre">string</span></tt> and <tt class="xref py py-attr docutils literal"><span class="pre">data</span></tt> also a <tt class="xref py py-class docutils literal"><span class="pre">string</span></tt>.
+Instances are immutable.
+The <a class="reference internal" href="#xauthdata" title="xauthdata"><tt class="xref py py-data docutils literal"><span class="pre">xauthdata</span></tt></a> member returns instances of this class and
+can be set to an instance of this class.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="PamHandle.conversation">
+<tt class="descclassname">PamHandle.</tt><tt class="descname">conversation</tt><big>(</big><em>prompts</em><big>)</big><a class="headerlink" href="#PamHandle.conversation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calls the function defined by the PAM <tt class="xref c c-macro docutils literal"><span class="pre">PAM_CONV</span></tt> item.
+The <em>prompts</em> argument is a <a class="reference internal" href="#PamHandle.Message" title="PamHandle.Message"><tt class="xref py py-class docutils literal"><span class="pre">Message</span></tt></a> object
+or a <tt class="xref py py-class docutils literal"><span class="pre">list</span></tt> of them.
+You don&#8217;t have to pass an actual <a class="reference internal" href="#PamHandle.Message" title="PamHandle.Message"><tt class="xref py py-class docutils literal"><span class="pre">Message</span></tt></a> object,
+any class that contains a <tt class="xref py py-class docutils literal"><span class="pre">string</span></tt> member <tt class="xref py py-attr docutils literal"><span class="pre">msg</span></tt>
+and a <tt class="xref py py-class docutils literal"><span class="pre">int</span></tt> member <tt class="xref py py-attr docutils literal"><span class="pre">msg_style</span></tt> will do.
+These members are used to initialise the <tt class="docutils literal"><span class="pre">struct</span> <span class="pre">pam_message</span></tt>
+members of the same name. It returns either a single <a class="reference internal" href="#PamHandle.Response" title="PamHandle.Response"><tt class="xref py py-class docutils literal"><span class="pre">Response</span></tt></a>
+object if a single <a class="reference internal" href="#PamHandle.Message" title="PamHandle.Message"><tt class="xref py py-class docutils literal"><span class="pre">Message</span></tt></a> was passed,
+or a <tt class="xref py py-class docutils literal"><span class="pre">list</span></tt> of them of the same length as the <tt class="xref py py-class docutils literal"><span class="pre">list</span></tt> passed.
+These <a class="reference internal" href="#PamHandle.Response" title="PamHandle.Response"><tt class="xref py py-class docutils literal"><span class="pre">Response</span></tt></a> objects contain the data the user entered.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="PamHandle.fail_delay">
+<tt class="descclassname">PamHandle.</tt><tt class="descname">fail_delay</tt><big>(</big><em>delay</em><big>)</big><a class="headerlink" href="#PamHandle.fail_delay" title="Permalink to this definition">¶</a></dt>
+<dd><p>This results in a call to the PAM library function <tt class="samp docutils literal"><span class="pre">pam_fail_delay()</span></tt>,
+which sets the maximum random delay after an authentication failure
+to <em>delay</em> milliseconds.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="PamHandle.get_user">
+<tt class="descclassname">PamHandle.</tt><tt class="descname">get_user</tt><big>(</big><span class="optional">[</span><em>prompt</em><span class="optional">]</span><big>)</big><a class="headerlink" href="#PamHandle.get_user" title="Permalink to this definition">¶</a></dt>
+<dd><p>This results in a call to the PAM library function <tt class="samp docutils literal"><span class="pre">pam_get_user()</span></tt>,
+which returns the current user name (a <tt class="xref py py-class docutils literal"><span class="pre">string</span></tt>)
+or <tt class="xref py py-const docutils literal"><span class="pre">None</span></tt> if <tt class="samp docutils literal"><span class="pre">pam_get_user()</span></tt> returns <tt class="xref c c-macro docutils literal"><span class="pre">NULL</span></tt>.
+If not known it asks the PAM application for the user name,
+giving it the <tt class="xref py py-class docutils literal"><span class="pre">string</span></tt> <em>prompt</em> parameter
+to prompt the user to enter it.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="PamHandle.strerror">
+<tt class="descclassname">PamHandle.</tt><tt class="descname">strerror</tt><big>(</big><em>errnum</em><big>)</big><a class="headerlink" href="#PamHandle.strerror" title="Permalink to this definition">¶</a></dt>
+<dd><p>This results in a call to the PAM library function <tt class="samp docutils literal"><span class="pre">pam_strerror()</span></tt>,
+which returns a <tt class="xref py py-class docutils literal"><span class="pre">string</span></tt> description of the <tt class="xref py py-class docutils literal"><span class="pre">int</span></tt>
+PAM return value <em>errnum</em>.</p>
+</dd></dl>
+
+<p>There is no interface provided for the PAM library functions <tt class="samp docutils literal"><span class="pre">pam_get_data()</span></tt>
+and <tt class="samp docutils literal"><span class="pre">pam_set_data()</span></tt>. There are two reasons for this.
+Firstly those two methods are provided so C code can have private storage
+local to the PAM handle.  A Python PAM Module can use own module name space
+to do the same job, and it&#8217;s easier to do so. But more importantly it&#8217;s
+safer because there is no type-safe way of providing access to the facility
+from Python.</p>
+</div>
+<div class="section" id="diagnostics-debugging-bugs">
+<span id="diagnostics"></span><h2>Diagnostics, Debugging, Bugs<a class="headerlink" href="#diagnostics-debugging-bugs" title="Permalink to this headline">¶</a></h2>
+<p>The way <cite>pam_python</cite> operates will be foreign to most Python programmers.
+It embeds Python into existing programs, primarily ones written in C.
+This means things like debugging and diagnostics
+are done differently to a normal Python program.</p>
+<div class="section" id="return-values">
+<span id="id1"></span><h3>Diagnostics<a class="headerlink" href="#return-values" title="Permalink to this headline">¶</a></h3>
+<p>If <cite>pam_python</cite> returns something other than <tt class="xref py py-const docutils literal"><span class="pre">PAM_SUCCESS</span></tt> to PAM a
+message will be written to the <tt class="docutils literal"><span class="pre">syslog</span></tt> <tt class="docutils literal"><span class="pre">LOG_AUTHPRIV</span></tt> facility. The only
+exception to this is when <cite>pam_python</cite> is passing on the return value from
+a Python <tt class="xref py py-meth docutils literal"><span class="pre">pam_sm_...()</span></tt> entry point - nothing is logged in that case.
+So, if your Python PAM Module is failing in mysterious ways
+check the log file your system is configured to write
+<tt class="docutils literal"><span class="pre">LOG_AUTHPRIV</span></tt> entries to.
+Usually this is <tt class="file docutils literal"><span class="pre">/var/log/syslog</span></tt> or <tt class="file docutils literal"><span class="pre">/var/log/auth.log</span></tt>.
+The diagnostic or traceback Python would normally print to <tt class="xref py py-attr docutils literal"><span class="pre">sys.stderr</span></tt>
+will be in there.</p>
+<p>The PAM result codes returned directly by <cite>pam_python</cite> are:</p>
+<dl class="data">
+<dt id="PAM_BUF_ERR">
+<tt class="descname">PAM_BUF_ERR</tt><a class="headerlink" href="#PAM_BUF_ERR" title="Permalink to this definition">¶</a></dt>
+<dd><p>Memory allocation failed.</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="PAM_MODULE_UNKNOWN">
+<tt class="descname">PAM_MODULE_UNKNOWN</tt><a class="headerlink" href="#PAM_MODULE_UNKNOWN" title="Permalink to this definition">¶</a></dt>
+<dd><p>The Python PAM module name wasn&#8217;t supplied.</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="PAM_OPEN_ERR">
+<tt class="descname">PAM_OPEN_ERR</tt><a class="headerlink" href="#PAM_OPEN_ERR" title="Permalink to this definition">¶</a></dt>
+<dd><p>The Python PAM module could not be opened.</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="PAM_SERVICE_ERR">
+<tt class="descname">PAM_SERVICE_ERR</tt><a class="headerlink" href="#PAM_SERVICE_ERR" title="Permalink to this definition">¶</a></dt>
+<dd><p>A Python exception was thrown, unless it was because of a memory allocation
+failure.</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="PAM_SYMBOL_ERR">
+<tt class="descname">PAM_SYMBOL_ERR</tt><a class="headerlink" href="#PAM_SYMBOL_ERR" title="Permalink to this definition">¶</a></dt>
+<dd><p>A <tt class="xref py py-meth docutils literal"><span class="pre">pam_sm_...()</span></tt> called by PAM wasn&#8217;t defined by the Python PAM module.</p>
+</dd></dl>
+
+</div>
+<div class="section" id="debugging">
+<span id="id2"></span><h3>Debugging<a class="headerlink" href="#debugging" title="Permalink to this headline">¶</a></h3>
+<p>If you have Python bindings for the PAM Application library then you can write
+test units in Python and use Pythons <a class="reference external" href="http://docs.python.org/2.7/library/pdb.html#pdb" title="(in Python v2.7)"><tt class="xref py py-mod docutils literal"><span class="pre">pdb</span></tt></a> module debug a Python PAM
+module. This is how <cite>pam_python</cite> was developed.</p>
+<p>I used <a class="reference external" href="http://www.pangalactic.org/PyPAM/">PyPAM</a> for the Python Application
+library bindings. Distributions often package it as <tt class="docutils literal"><span class="pre">python-pam</span></tt>. To set
+breakpoints in <a class="reference external" href="http://docs.python.org/2.7/library/pdb.html#pdb" title="(in Python v2.7)"><tt class="xref py py-mod docutils literal"><span class="pre">pdb</span></tt></a> either wait until PAM has loaded your module, or
+<a class="reference external" href="http://docs.python.org/2.7/reference/simple_stmts.html#import" title="(in Python v2.7)"><tt class="xref std std-keyword docutils literal"><span class="pre">import</span></tt></a> it before you start debugging.</p>
+</div>
+<div class="section" id="bugs">
+<span id="id3"></span><h3>Bugs<a class="headerlink" href="#bugs" title="Permalink to this headline">¶</a></h3>
+<p>There are several design decisions you may stumble across when using
+<cite>pam_python</cite>. One is that the Python PAM module is isolated from the rest
+of the Python environment. This differs from a <a class="reference external" href="http://docs.python.org/2.7/reference/simple_stmts.html#import" title="(in Python v2.7)"><tt class="xref std std-keyword docutils literal"><span class="pre">import</span></tt></a>&#8216;ed Python module,
+where regardless of how many times a module is imported there is only one copy
+that shares the one global name space.
+For example, if you <a class="reference external" href="http://docs.python.org/2.7/reference/simple_stmts.html#import" title="(in Python v2.7)"><tt class="xref std std-keyword docutils literal"><span class="pre">import</span></tt></a> your Python PAM module
+and then debug it as suggested above then there will be 2
+copies of your Python PAM module in memory -
+the imported one and the one PAM is using.
+If the PAM module sets a global variable you won&#8217;t see it in the
+<a class="reference external" href="http://docs.python.org/2.7/reference/simple_stmts.html#import" title="(in Python v2.7)"><tt class="xref std std-keyword docutils literal"><span class="pre">import</span></tt></a>&#8216;ed one. Indeed, obtaining any sort of handle to the module the
+PAM is using is near impossible. This means the debugger can inspect variables
+in the module only when a breakpoint has one of the modules functions in its
+backtrace.</p>
+<p>There are a few of reasons for this. Firstly, the PAM Module Writers Guide says
+this is the way it should be, so <cite>pam_python</cite> encourages it. Secondly, if a
+PAM application is using a Python PAM Module it&#8217;s important the PAM module
+remains as near to invisible as possible to avoid conflicts. Finally, and most
+importantly, references to objects constructed by the Python PAM module must
+never leak. This is because the destructors to those objects are C functions
+that live in <cite>pam_python</cite>, and those destructors are called when all
+references to the objects are gone. When the application calls PAM library function
+<tt class="samp docutils literal"><span class="pre">pam_end()</span></tt> function <cite>pam_python</cite> is unloaded, and with it goes the
+destructor code. Should a reference to an object defined by <cite>pam_python</cite> exist
+after <tt class="samp docutils literal"><span class="pre">pam_end()</span></tt> returns the call to destructor
+will result in a jump to a non-existent address causing a <tt class="docutils literal"><span class="pre">SIGSEGV</span></tt>.</p>
+<p>Another potential trap is the initialisation and finalisation of the Python
+interpreter itself. Calling the interpreter&#8217;s finalisation routine while it is
+in use would I imagine be a big no-no. If <cite>pam_python</cite> has to initialise
+the interpreter (by calling <a class="reference external" href="http://docs.python.org/2.7/c-api/init.html#Py_Initialize" title="(in Python v2.7)"><tt class="xref c c-func docutils literal"><span class="pre">Py_Initialize()</span></tt></a>) then it will call its
+finaliser <a class="reference external" href="http://docs.python.org/2.7/c-api/init.html#Py_Finalize" title="(in Python v2.7)"><tt class="xref c c-func docutils literal"><span class="pre">Py_Finalize()</span></tt></a> when the last Python PAM module is destroyed.
+This is heuristic works in most scenarios. One example where is won&#8217;t work is a
+sequence like:</p>
+<div class="highlight-python"><pre>start-python-pam-module;
+application-initialises-interpreter;
+stop-python-pam-module;
+application-stops-interpreter.</pre>
+</div>
+<p>The above is doomed to fail.</p>
+</div>
+</div>
+<div class="section" id="an-example">
+<span id="example"></span><h2>An example<a class="headerlink" href="#an-example" title="Permalink to this headline">¶</a></h2>
+<p>This is one of the examples provided by the package:</p>
+<pre class="literal-block">
+#
+# Duplicates pam_permit.c
+#
+DEFAULT_USER    = &quot;nobody&quot;
+
+def pam_sm_authenticate(pamh, flags, argv):
+  try:
+    user = pamh.get_user(None)
+  except pamh.exception, e:
+    return e.pam_result
+  if user == None:
+    pam.user = DEFAULT_USER
+  return pamh.PAM_SUCCESS
+
+def pam_sm_setcred(pamh, flags, argv):
+  return pamh.PAM_SUCCESS
+
+def pam_sm_acct_mgmt(pamh, flags, argv):
+  return pamh.PAM_SUCCESS
+
+def pam_sm_open_session(pamh, flags, argv):
+  return pamh.PAM_SUCCESS
+
+def pam_sm_close_session(pamh, flags, argv):
+  return pamh.PAM_SUCCESS
+
+def pam_sm_chauthtok(pamh, flags, argv):
+  return pamh.PAM_SUCCESS
+
+</pre>
+<p>Assuming it and <tt class="docutils literal"><span class="pre">pam_python.so</span></tt> are in the directory <tt class="docutils literal"><span class="pre">/lib/security</span></tt> adding
+these rules to <tt class="docutils literal"><span class="pre">/etc/pam.conf</span></tt> would run it:</p>
+<div class="highlight-python"><pre>login account   requisite   pam_python.so pam_accept.py
+login auth      requisite   pam_python.so pam_accept.py
+login password  requisite   pam_python.so pam_accept.py
+login session   requisite   pam_python.so pam_accept.py</pre>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="#">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#"><cite>pam_python</cite></a><ul>
+<li><a class="reference internal" href="#introduction">Introduction</a></li>
+<li><a class="reference internal" href="#configuring-pam">Configuring PAM</a></li>
+<li><a class="reference internal" href="#python-pam-modules">Python PAM modules</a></li>
+<li><a class="reference internal" href="#the-pamhandle-class">The PamHandle Class</a></li>
+<li><a class="reference internal" href="#diagnostics-debugging-bugs">Diagnostics, Debugging, Bugs</a><ul>
+<li><a class="reference internal" href="#return-values">Diagnostics</a></li>
+<li><a class="reference internal" href="#debugging">Debugging</a></li>
+<li><a class="reference internal" href="#bugs">Bugs</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#an-example">An example</a></li>
+</ul>
+</li>
+</ul>
+
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/pam_python.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li><a href="#">pam_python 1.0.2 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2010, Russell Stuart.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+    </div>
+  </body>
+</html>
