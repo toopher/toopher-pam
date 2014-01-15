@@ -34,13 +34,19 @@ libpython_so = find_library("python%d.%d" % sys.version_info[:2])
 if not libpython_so:
     "libpython%d.%d.so.1" % sys.version_info[:2]
 
+if os.path.isdir('/lib64/security'):
+    default_security_dir = '/lib64/security/'
+else:
+    default_security_dir = '/lib/security/'
+
 ext_modules = [
     Extension(
       "pam_toopher",
       sources=["pam_python.c", "importer.c"],
       include_dirs = [],
       library_dirs=[],
-      define_macros=[('LIBPYTHON_SO','"'+libpython_so+'"')] + Py_DEBUG,
+      define_macros=[('LIBPYTHON_SO','"'+libpython_so+'"'),
+                     ('DEFAULT_SECURITY_DIR', '"%s"' % default_security_dir)] + Py_DEBUG,
       libraries=["pam","python%d.%d" % sys.version_info[:2]],
     ), ]
 
