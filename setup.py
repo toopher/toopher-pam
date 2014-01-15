@@ -31,8 +31,8 @@ else:
 libpython_so = ('libpython%d.%d.so.1') % sys.version_info[:2]
 ext_modules = [
     Extension(
-      "pam_python",
-      sources=["pam_python.c"],
+      "pam_toopher",
+      sources=["pam_python.c", "importer.c"],
       include_dirs = [],
       library_dirs=[],
       define_macros=[('LIBPYTHON_SO','"'+libpython_so+'"')] + Py_DEBUG,
@@ -40,15 +40,15 @@ ext_modules = [
     ), ]
 
 setup(
-  name="pam_python",
+  name="pam_toopher",
   version="1.0.2",
-  description="Enabled PAM Modules to be written in Python",
+  description="Toopher PAM module",
   keywords="pam,embed,authentication,security",
   platforms="Unix",
   long_description=long_description,
-  author="Russell Stuart",
-  author_email="russell-pampython@stuart.id.au",
-  url="http://www.stuart.id.au/russell/files/pam_python",
+  author="Toopher",
+  author_email="dev@toopher.com",
+  url="https://github.com/toopher/toopher-pam/",
   license="EPL",
   classifiers=classifiers,
   ext_modules=ext_modules,

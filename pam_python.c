@@ -12,12 +12,13 @@
 #define PAM_SM_SESSION
 #define PAM_SM_PASSWORD
 
+#include <Python.h>
+
 #include <security/pam_modules.h>
 #include <security/_pam_macros.h>
 
 #undef	_POSIX_C_SOURCE
 
-#include <Python.h>
 #include <dlfcn.h>
 #include <signal.h>
 #include <structmember.h>
