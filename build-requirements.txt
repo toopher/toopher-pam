@@ -1,8 +1,8 @@
 # This file lists the python packages required to build the python-based
 # artifacts. The packages can be installed with:
-#     pip install -r builder-requirements.txt
+#     pip install -r build-requirements.txt
 
--e git+https://github.com/toopher/toopher-python@7e9dacdb8980cc6b45eab9e831abe2a281037710#egg=toopher
+https://github.com/toopher/toopher-python/archive/7e9dacdb8980cc6b45eab9e831abe2a281037710.zip
 configobj
 argparse
 PyInstaller
