@@ -166,7 +166,6 @@ class ApiHelper(object):
 
 def get_api_object(system_config, log=lambda message: None):
     try:
-        raise Exception()
         credential_filename = system_config[SYSTEM_CONFIG_API_SECTION][SYSTEM_CONFIG_API_KEY_CREDENTIAL_FILE]
         credentials = get_credentials_config(credential_filename, log=log)
         key = credentials[CREDENTIAL_KEY_KEY]
