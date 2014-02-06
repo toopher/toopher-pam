@@ -11,10 +11,13 @@ import configobj
 import toopher
 import validate
 
+from config import *
+
 TIMEOUT = 60
 
-DEFAULT_FILENAME_SYSTEM_API_CREDENTIALS = "/etc/security/toopher/credentials"
-DEFAULT_FILENAME_SYSTEM_CONFIG = "/etc/security/toopher/config"
+# Setup paths (autoconf helps populate these)
+DEFAULT_FILENAME_SYSTEM_API_CREDENTIALS = os.path.join(SYSTEM_TOOPHER_CONFIG_DIR, "credentials")
+DEFAULT_FILENAME_SYSTEM_CONFIG = os.path.join(SYSTEM_TOOPHER_CONFIG_DIR, "config")
 DEFAULT_FILENAME_USER_CONFIG = ".toopher"
 
 CREDENTIAL_SPEC = StringIO.StringIO("""\
@@ -24,7 +27,7 @@ secret = string
 
 SYSTEM_CONFIG_SPEC = StringIO.StringIO("""\
 [API]
-credential-file = string(default='/etc/security/toopher/credentials')
+credential-file = string(default='%s')
 base-url = string(default='https://api.toopher.com/v1/')
 
 [Options]
@@ -33,7 +36,7 @@ availability = option('none', 'available', 'groups', 'required', default='availa
 available-group = string(default='toopher-available')
 required-group = string(default='toopher-required')
 automation-allowed = boolean(default=false)
-""")
+""" % DEFAULT_FILENAME_SYSTEM_API_CREDENTIALS)
 
 USER_CONFIG_SPEC = StringIO.StringIO("""\
 [Pairings]

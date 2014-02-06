@@ -1,0 +1,3 @@
+# Setup paths (populated by autoconf)
+SYSTEM_TOOPHER_CONFIG_DIR = "@TOOPHER_CONF_DIR@".replace("${prefix}", "@prefix@")
+

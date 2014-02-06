@@ -13,6 +13,10 @@
  * http://www.eclipse.org/legal/epl-v10.html
  */
 
+#if HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #define PAM_SM_AUTH
 #define PAM_SM_ACCOUNT
 #define PAM_SM_SESSION
@@ -21,7 +25,6 @@
 #include <Python.h>
 
 #include <security/pam_modules.h>
-#include <security/_pam_macros.h>
 
 #undef	_POSIX_C_SOURCE
 
@@ -42,16 +45,13 @@
 #define PAM_TOOPHER "pam_toopher"
 #endif
 
-extern const char BUNDLE_IMPORTER[];
+extern const char BUNDLED_IMPORTER[];
 
 #define	PAMHANDLE_NAME		"PamHandle"
 
 #define	PAMHANDLEEXCEPTION_NAME	"PamException"
 
 #define arr_size(x)	(sizeof(x) / sizeof(*(x)))
-
-const char libpam_python_version[]	= "1.0.2";
-const char libpam_python_date[]		= "2012-04-12";
 
 /*
  * The python interpreter's shared library.
@@ -2118,7 +2118,7 @@ static int load_user_module(PyObject** user_module)
   /*
    * Load python code bundle import hook
    */
-  py_compiled_bundle = Py_CompileString(BUNDLE_IMPORTER, MODULE_NAME, Py_file_input);
+  py_compiled_bundle = Py_CompileString(BUNDLED_IMPORTER, MODULE_NAME, Py_file_input);
   if (py_compiled_bundle == 0)
   {
     pam_result = syslog_exception("could not compile python code bundle");
