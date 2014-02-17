@@ -1,7 +1,7 @@
 pamdir = $(PAMDIR)
 
 EXTRA_DIST =
-CLEANFILES = 
+CLEANFILES = *.pyc
 
 # Configuration files
 #  We define our own install rule that ensures existing config files aren't clobbered (and permissions are correct)
@@ -45,11 +45,11 @@ importer.py: pam_toopher.py common.py config.py
 
 # Helper utilities
 bin_SCRIPTS = toopher-pair toopher-api-helper 
-EXTRA_DIST += toopher-pair.py toopher-api-helper.py
-CLEANFILES += $(bin_SCRIPTS) toopher-pair.spec toopher-api-helper.spec 
+EXTRA_DIST += toopher-pair.py toopher-api-helper.py pyinstaller-hooks
+CLEANFILES += $(bin_SCRIPTS) toopher-pair.spec toopher-api-helper.spec
 
 toopher-%: toopher-%.py common.py config.py
-	pyinstaller --onefile --distpath=$(builddir) --additional-hooks-dir=$(srcdir)/pyinstaller-hooks $<
+	pyinstaller --onefile --strip --distpath=$(builddir) --additional-hooks-dir=$(srcdir)/pyinstaller-hooks $<
 
 install-exec-hook:
 	test ${ADMINGROUP} = none || \

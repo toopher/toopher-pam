@@ -254,8 +254,8 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 pamdir = $(PAMDIR)
 EXTRA_DIST = bin2c.c bundle_importer toopher-pair.py \
-	toopher-api-helper.py
-CLEANFILES = importer.c importer.py bin2c $(bin_SCRIPTS) \
+	toopher-api-helper.py pyinstaller-hooks
+CLEANFILES = *.pyc importer.c importer.py bin2c $(bin_SCRIPTS) \
 	toopher-pair.spec toopher-api-helper.spec
 
 # Configuration files
@@ -837,7 +837,7 @@ importer.py: pam_toopher.py common.py config.py
 	python $(srcdir)/bundle_importer/create_bundle_importer.py --outfile $@ $^
 
 toopher-%: toopher-%.py common.py config.py
-	pyinstaller --onefile --distpath=$(builddir) --additional-hooks-dir=$(srcdir)/pyinstaller-hooks $<
+	pyinstaller --onefile --strip --distpath=$(builddir) --additional-hooks-dir=$(srcdir)/pyinstaller-hooks $<
 
 install-exec-hook:
 	test ${ADMINGROUP} = none || \
