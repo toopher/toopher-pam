@@ -17,6 +17,9 @@
 #include "config.h"
 #endif
 
+#include <dirent.h>
+#include <string.h>
+
 #define PAM_SM_AUTH
 #define PAM_SM_ACCOUNT
 #define PAM_SM_SESSION
@@ -54,9 +57,9 @@ extern const char BUNDLED_IMPORTER[];
 #define arr_size(x)	(sizeof(x) / sizeof(*(x)))
 
 /*
- * The python interpreter's shared library.
+ * The python interpreter's shared library name prefix.
  */
-static char libpython_so[]	= LIBPYTHON_SO;
+#define LIBPYTHON_NAME		"libpython"
 
 /*
  * Initialise Python.  How this should be done changed between versions.
@@ -2245,6 +2248,11 @@ static PyObject* newSingletonObject(
 static int get_pamHandle(
   PamHandleObject** result, pam_handle_t* pamh)
 {
+  char			libpython_name[256] = "";
+  char          lib_search_path[] = LT_DLSEARCH_PATH;
+  char*			dir_name;
+  DIR*			dir;
+  struct dirent*	ent;
   void*			dlhandle = 0;
   int			do_initialize;
   PyObject*		user_module = 0;
@@ -2266,14 +2274,40 @@ static int get_pamHandle(
     goto error_exit;
   }
   /*
+   * Find python library
+   */
+  /* Search system library path */
+  dir_name = strtok(lib_search_path, ":");
+  while (dir_name != NULL && strlen(libpython_name) == 0) {
+    if ((dir = opendir(dir_name)) != NULL) {
+      /* Search each file in directory */
+      while ((ent = readdir(dir)) != NULL) {
+        /* If it starts with libpython and has ".so" in it, use it */
+        if (strncmp(LIBPYTHON_NAME, ent->d_name, strlen(LIBPYTHON_NAME)) == 0 &&
+            strstr(ent->d_name, ".so") != NULL) {
+          strncat(libpython_name, dir_name, sizeof(libpython_name)-strlen(libpython_name)-1);
+          strncat(libpython_name, "/", sizeof(libpython_name)-strlen(libpython_name)-1);
+          strncat(libpython_name, ent->d_name, sizeof(libpython_name)-strlen(libpython_name)-1);
+          break;
+        }
+      }
+      closedir(dir);
+    }
+    dir_name = strtok(NULL, ":");
+  }
+  if (strlen(libpython_name) == 0) {
+    pam_result = syslog_path_message(MODULE_NAME, "Could not find python library to load");
+    goto error_exit;
+  }
+  /*
    * Initialize Python if required.
    */
-  dlhandle = dlopen(libpython_so, RTLD_NOW|RTLD_GLOBAL);
+  dlhandle = dlopen(libpython_name, RTLD_NOW|RTLD_GLOBAL);
   if (dlhandle == 0)
   {
     pam_result = syslog_path_message(
         MODULE_NAME,
-	"Can't load python library %s: %s", libpython_so, strerror(errno));
+	"Can't load python library %s: %s", libpython_name, strerror(errno));
     goto error_exit;
   }
   do_initialize = pypam_initialize_count > 0 || !Py_IsInitialized();

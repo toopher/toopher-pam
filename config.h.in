@@ -58,8 +58,8 @@
 /* Define to 1 if you have the <unistd.h> header file. */
 #undef HAVE_UNISTD_H
 
-/* Python library name */
-#undef LIBPYTHON_SO
+/* Define to the system default library search path. */
+#undef LT_DLSEARCH_PATH
 
 /* Define to the sub-directory in which libtool stores uninstalled libraries.
    */

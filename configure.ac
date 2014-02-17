@@ -5,6 +5,7 @@ AC_INIT([toopher-pam], [1.0.0], [dev@toopher.com])
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_MACRO_DIR([m4])
 LT_INIT
+LT_SYS_DLSEARCH_PATH
 AM_INIT_AUTOMAKE([-Wall -Wno-override -Werror foreign])
 
 AC_CONFIG_SRCDIR([pam_python.c])
@@ -109,9 +110,6 @@ if test -z $PYTHON_INCLUDE_DIR; then
 fi
 if test -z $PYTHON_LIB; then
   AC_MSG_ERROR([Missing python library])
-else
-  AC_DEFINE_UNQUOTED([LIBPYTHON_SO], ["lib${PYTHON_LIB}.so"],
-                     [Python library name])
 fi
 AX_PYTHON_PATH()
 AX_PYTHON_VERSION_ENSURE([2.5])
