@@ -1,3 +1,5 @@
+export # Export make variables to sub-makes
+
 pamdir = $(PAMDIR)
 
 EXTRA_DIST =
@@ -86,3 +88,8 @@ clean-convenience-link:
 all-local: convenience-link
 
 clean-local: clean-convenience-link
+
+# Packaging
+deb rpm: dist
+	cp $(DIST_ARCHIVES) packaging
+	$(MAKE) -C packaging $@

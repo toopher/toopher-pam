@@ -813,6 +813,7 @@ uninstall-am: uninstall-binSCRIPTS uninstall-dist_toopherconfDATA \
 	tags uninstall uninstall-am uninstall-binSCRIPTS \
 	uninstall-dist_toopherconfDATA uninstall-pamLTLIBRARIES
 
+export # Export make variables to sub-makes
 install-dist_toopherconfDATA: $(dist_toopherconf_DATA)
 		@if [ ! -d $(DESTDIR)$(toopherconfdir) ]; then \
 			test -z "$(toopherconfdir)" || $(MKDIR_P) "$(DESTDIR)$(toopherconfdir)"; \
@@ -869,6 +870,11 @@ clean-convenience-link:
 all-local: convenience-link
 
 clean-local: clean-convenience-link
+
+# Packaging
+deb rpm: dist
+	cp $(DIST_ARCHIVES) packaging
+	$(MAKE) -C packaging $@
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
