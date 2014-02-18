@@ -1,9 +1,13 @@
 /*
  * This file started it's life as Russell Stuart's pam_python module. It has
- * been updated to use Toopher's bundled importer and pam_python module.
+ * been updated to use Toopher's bundle importer and pam_python module.
  * 
- * Modification are Copyright (c) 2014 Toopher, Inc. 
- * Original source code is copyrighted as originall marked (included below)
+ * Modifications to the original source contained in this file are
+ * Copyright (c) 2014 Toopher, Inc. and are recognized as a derivative
+ * work (and thus are required to be licensed according to the original work).
+ *
+ * Original source code is copyrighted as originally marked (included below)
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  *
  * Copyright (c) 2007,2009,2010,2011,2012 Russell Stuart
  *
