@@ -92,4 +92,4 @@ clean-local: clean-convenience-link
 # Packaging
 deb rpm: dist
 	cp $(DIST_ARCHIVES) packaging
-	$(MAKE) -C packaging $@
+	RECURSIVE_MAKE=true $(MAKE) -C packaging $@
