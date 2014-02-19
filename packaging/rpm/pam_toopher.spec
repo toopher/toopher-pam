@@ -29,7 +29,7 @@ authentication by any program supporting PAM.
 %patch -p1
 
 %build
-%configure
+%configure --with-admin-group=vagrant
 make
 
 %pre

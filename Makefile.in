@@ -40,7 +40,7 @@ subdir = .
 DIST_COMMON = $(am__configure_deps) $(dist_toopherconf_DATA) \
 	$(srcdir)/Makefile.am $(srcdir)/Makefile.in \
 	$(srcdir)/config.h.in $(srcdir)/config.py.in \
-	$(top_srcdir)/configure TODO build-aux/compile \
+	$(top_srcdir)/configure build-aux/compile \
 	build-aux/config.guess build-aux/config.sub build-aux/depcomp \
 	build-aux/install-sh build-aux/ltmain.sh build-aux/missing
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
