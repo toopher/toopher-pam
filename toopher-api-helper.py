@@ -39,6 +39,10 @@ def main():
 
     invocation_args = argparser.parse_args()
 
+    if sys.stdin.isatty():
+        sys.stderr.write("Warning: This utility is not intended to be executed from the command line! "
+                         "Use Ctrl-C to exit if needed.\n")
+
     # Retrieve API credentials from system configuration file
     try:
         system_config = get_system_config()
