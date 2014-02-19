@@ -2253,7 +2253,7 @@ static int get_pamHandle(
   PamHandleObject** result, pam_handle_t* pamh)
 {
   char			libpython_name[256] = "";
-  char          lib_search_path[] = LT_DLSEARCH_PATH;
+  char          lib_search_path[] = LT_DLSEARCH_PATH"/lib:/lib32:/lib64:/usr/lib:/usr/lib32:usr/lib64";
   char*			dir_name;
   DIR*			dir;
   struct dirent*	ent;
