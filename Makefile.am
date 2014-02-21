@@ -58,6 +58,9 @@ install-exec-hook:
 		chgrp ${ADMINGROUP} ${DESTDIR}${bindir}/toopher-api-helper && \
 		chmod g+s ${DESTDIR}${bindir}/toopher-api-helper
 
+install-data-hook:
+	find $(DESTDIR)$(PAMDIR) -type f -name \*.la -delete
+
 # Clean-up after pyinstaller
 clean-local:
 	rm -rf build

@@ -1,4 +1,3 @@
-%define _unpackaged_files_terminate_build 0 # Ignores extra .la file
 %define toopherconfdir %{_sysconfdir}/security/toopher
 %define __os_install_post %{nil} # Don't strip them binaries!
 

@@ -1,7 +1,7 @@
 #                                               -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
 
-AC_INIT([toopher-pam], [0.9+1.0.0beta1], [dev@toopher.com])
+AC_INIT([toopher-pam], [0.9+1.0.0beta2], [dev@toopher.com])
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_MACRO_DIR([m4])
 LT_INIT
