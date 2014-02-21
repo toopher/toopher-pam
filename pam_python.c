@@ -2278,42 +2278,37 @@ static int get_pamHandle(
     goto error_exit;
   }
   /*
-   * Find python library
+   * Find and load python library
    */
   /* Search system library path */
   dir_name = strtok(lib_search_path, ":");
-  while (dir_name != NULL && strlen(libpython_name) == 0) {
+  while (dir_name != NULL && dlhandle == 0) {
     if ((dir = opendir(dir_name)) != NULL) {
       /* Search each file in directory */
       while ((ent = readdir(dir)) != NULL) {
-        /* If it starts with libpython and has ".so" in it, use it */
+        /* If it starts with libpython and has ".so" in it, try to dlopen it */
         if (strncmp(LIBPYTHON_NAME, ent->d_name, strlen(LIBPYTHON_NAME)) == 0 &&
             strstr(ent->d_name, ".so") != NULL) {
           strncat(libpython_name, dir_name, sizeof(libpython_name)-strlen(libpython_name)-1);
           strncat(libpython_name, "/", sizeof(libpython_name)-strlen(libpython_name)-1);
           strncat(libpython_name, ent->d_name, sizeof(libpython_name)-strlen(libpython_name)-1);
-          break;
+          dlhandle = dlopen(libpython_name, RTLD_NOW|RTLD_GLOBAL);
+          if (dlhandle != 0) {
+              break;
+          }
         }
       }
       closedir(dir);
     }
     dir_name = strtok(NULL, ":");
   }
-  if (strlen(libpython_name) == 0) {
-    pam_result = syslog_path_message(MODULE_NAME, "Could not find python library to load");
+  if (dlhandle == 0) {
+    pam_result = syslog_path_message(MODULE_NAME, "Could not find a loadable python library");
     goto error_exit;
   }
   /*
    * Initialize Python if required.
    */
-  dlhandle = dlopen(libpython_name, RTLD_NOW|RTLD_GLOBAL);
-  if (dlhandle == 0)
-  {
-    pam_result = syslog_path_message(
-        MODULE_NAME,
-	"Can't load python library %s: %s", libpython_name, strerror(errno));
-    goto error_exit;
-  }
   do_initialize = pypam_initialize_count > 0 || !Py_IsInitialized();
   if (do_initialize)
   {
