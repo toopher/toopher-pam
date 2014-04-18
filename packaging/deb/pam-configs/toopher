@@ -1,0 +1,6 @@
+Name: Toopher Strong Authentication
+Default: yes
+Priority: 100
+Auth-Type: Additional
+Auth:
+	[success=ok ignore=ignore default=bad]		pam_toopher.so

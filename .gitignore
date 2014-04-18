@@ -79,4 +79,7 @@ coverage.xml
 docs/_build/
 
 
-
+### Manually added
+importer.*
+bin2c
+Vagrantfile

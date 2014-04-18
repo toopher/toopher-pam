@@ -1,0 +1,16 @@
+Source: toopher-pam
+Section: libs
+Priority: optional
+Maintainer: Toopher, Inc. <dev@toopher.com>
+Build-Depends: debhelper (>= 8.0.0), autotools-dev, libpam-dev, python-dev
+Standards-Version: 3.9.2
+Homepage: https://toopher.com
+Vcs-Git: git://github.com/toopher/toopher-pam.git
+Vcs-Browser: https://github.com/toopher/toopher-pam
+
+Package: libpam-toopher
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, python
+Description: PAModule providing Toopher's strong authentication
+ This package provides a PAModule that allows Toopher to be used for 
+ authentication by any program supporting PAM.

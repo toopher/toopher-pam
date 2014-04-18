@@ -1,4 +1,14 @@
 /*
+ * This file started it's life as Russell Stuart's pam_python module. It has
+ * been updated to use Toopher's bundle importer and pam_python module.
+ * 
+ * Modifications to the original source contained in this file are
+ * Copyright (c) 2014 Toopher, Inc. and are recognized as a derivative
+ * work (and thus are required to be licensed according to the original work).
+ *
+ * Original source code is copyrighted as originally marked (included below)
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ *
  * Copyright (c) 2007,2009,2010,2011,2012 Russell Stuart
  *
  * All rights reserved. This program and the accompanying materials
@@ -7,29 +17,42 @@
  * http://www.eclipse.org/legal/epl-v10.html
  */
 
+#if HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+#include <dirent.h>
+#include <string.h>
+
 #define PAM_SM_AUTH
 #define PAM_SM_ACCOUNT
 #define PAM_SM_SESSION
 #define PAM_SM_PASSWORD
 
+#include <Python.h>
+
 #include <security/pam_modules.h>
-#include <security/_pam_macros.h>
 
 #undef	_POSIX_C_SOURCE
 
-#include <Python.h>
 #include <dlfcn.h>
 #include <signal.h>
 #include <structmember.h>
 #include <syslog.h>
 
 #ifndef	MODULE_NAME
-#define	MODULE_NAME		"libpam_python"
+#define	MODULE_NAME		"libpam_toopher"
 #endif
 
 #ifndef	DEFAULT_SECURITY_DIR
 #define	DEFAULT_SECURITY_DIR	"/lib/security/"
 #endif
+
+#ifndef PAM_TOOPHER
+#define PAM_TOOPHER "pam_toopher"
+#endif
+
+extern const char BUNDLED_IMPORTER[];
 
 #define	PAMHANDLE_NAME		"PamHandle"
 
@@ -37,13 +60,10 @@
 
 #define arr_size(x)	(sizeof(x) / sizeof(*(x)))
 
-const char libpam_python_version[]	= "1.0.2";
-const char libpam_python_date[]		= "2012-04-12";
-
 /*
- * The python interpreter's shared library.
+ * The python interpreter's shared library name prefix.
  */
-static char libpython_so[]	= LIBPYTHON_SO;
+#define LIBPYTHON_NAME		"libpython"
 
 /*
  * Initialise Python.  How this should be done changed between versions.
@@ -317,17 +337,6 @@ static int syslog_python2pam(PyObject* exception_type)
 }
 
 /*
- * Return the modules filename.
- */
-static const char* get_module_path(PamHandleObject* pamHandle)
-{
-  const char* result = PyModule_GetFilename(pamHandle->module);
-  if (result != 0)
-    return result;
-  return MODULE_NAME;
-}
-
-/*
  * Print an exception to syslog.
  */
 static int syslog_path_exception(const char* module_path, const char* errormsg)
@@ -399,9 +408,9 @@ static int syslog_path_exception(const char* module_path, const char* errormsg)
 /*
  * Print an exception to syslog, once we are initialised.
  */
-static int syslog_exception(PamHandleObject* pamHandle, const char* errormsg)
+static int syslog_exception(const char* errormsg)
 {
-  return syslog_path_exception(get_module_path(pamHandle), errormsg);
+  return syslog_path_exception(MODULE_NAME, errormsg);
 }
 
 /*
@@ -434,13 +443,13 @@ static int syslog_path_message(
 /*
  * Print an message to syslog, once we are initialised.
  */
-static int syslog_message(PamHandleObject* pamHandle, const char* message, ...)
+static int syslog_message(const char* message, ...)
 {
   va_list	ap;
   int		result;
 
   va_start(ap, message);
-  result = syslog_path_vmessage(get_module_path(pamHandle), message, ap);
+  result = syslog_path_vmessage(MODULE_NAME, message, ap);
   va_end(ap);
   return result;
 }
@@ -448,8 +457,7 @@ static int syslog_message(PamHandleObject* pamHandle, const char* message, ...)
 /*
  * Print a traceback to syslog.
  */
-static int syslog_path_traceback(
-    const char* module_path, PamHandleObject* pamHandle)
+static int syslog_path_traceback(const char* module_path, PamHandleObject *pamHandle)
 {
   PyObject*	args = 0;
   PyObject*	ptraceback = 0;
@@ -504,9 +512,9 @@ static int syslog_path_traceback(
 /*
  * Print an message to syslog, once we are initialised.
  */
-static int syslog_traceback(PamHandleObject* pamHandle)
+static int syslog_traceback(PamHandleObject *pamHandle)
 {
-  return syslog_path_traceback(get_module_path(pamHandle), pamHandle);
+  return syslog_path_traceback(MODULE_NAME, pamHandle);
 }
 
 /*
@@ -2108,107 +2116,44 @@ static void cleanup_pamHandle(pam_handle_t* pamh, void* data, int error_status)
  * Find the module, and load it if we haven't see it before.  Returns
  * PAM_SUCCESS if it worked, the PAM error code otherwise.
  */
-static int load_user_module(
-    PyObject** user_module, PamHandleObject* pamHandle,
-    const char* module_path)
+static int load_user_module(PyObject** user_module)
 {
-  PyObject*	builtins = 0;
-  PyObject*	module_dict = 0;
-  FILE*		module_fp = 0;
-  char*		user_module_name = 0;
-  PyObject*	py_resultobj = 0;
-  char*		dot;
+  PyObject* py_compiled_bundle = 0;
+  PyObject* py_bundle_module = 0;
   int		pam_result;
-  int		py_result;
+  
+  /*
+   * Load python code bundle import hook
+   */
+  py_compiled_bundle = Py_CompileString(BUNDLED_IMPORTER, MODULE_NAME, Py_file_input);
+  if (py_compiled_bundle == 0)
+  {
+    pam_result = syslog_exception("could not compile python code bundle");
+    goto error_exit;
+  }
 
   /*
-   * Open the file.
+   * Install bundle import hook
    */
-  module_fp = fopen(module_path, "r");
-  if (module_fp == 0)
+  py_bundle_module = PyImport_ExecCodeModuleEx("bundle_importer", py_compiled_bundle, "<bundled>");
+  if (py_bundle_module == 0)
   {
-    syslog_path_message(
-        module_path, "Can not open module: %s",
-	strerror(errno));
-    pam_result = PAM_OPEN_ERR;
+    pam_result = syslog_exception("could not import python code bundle");
     goto error_exit;
   }
-  /*
-   * Create the new module.
-   */
-  user_module_name = strrchr(module_path, '/');
-  if (user_module_name == 0)
-    user_module_name = strdup(module_path);
-  else
-    user_module_name = strdup(user_module_name + 1);
-  if (user_module_name == 0)
-  {
-    syslog_path_message(MODULE_NAME, "out of memory");
-    pam_result = PAM_BUF_ERR;
-    goto error_exit;
-  }
-  dot = strrchr(user_module_name, '.');
-  if (dot != 0 || strcmp(dot, ".py") == 0)
-    *dot = '\0';
-  *user_module = PyModule_New(user_module_name);
+
+  *user_module = PyImport_ImportModule(PAM_TOOPHER);
   if (*user_module == 0)
   {
-    pam_result = syslog_path_exception(
-        module_path,
-	"PyModule_New(pamh.module.__file__) failed");
+    pam_result = syslog_exception("could not load pam_toopher module");
     goto error_exit;
   }
-  py_result =
-      PyModule_AddStringConstant(*user_module, "__file__", (char*)module_path);
-  if (py_result == -1)
-  {
-    pam_result = syslog_path_exception(
-        module_path,
-	"PyModule_AddStringConstant(pamh.module, '__file__', module_path) failed");
-    goto error_exit;
-  }
-  /*
-   * Add __builtins__.
-   */
-  if (!PyObject_HasAttrString(*user_module , "__builtins__"))
-  {
-    builtins = PyEval_GetBuiltins();
-    Py_INCREF(builtins);	/* is stolen */
-    if (PyModule_AddObject(*user_module, "__builtins__", builtins) == -1)
-    {
-      pam_result = syslog_path_exception(
-          module_path,
-	  "PyModule_AddObject(pamh.module, '__builtins__', builtins) failed");
-      goto error_exit;
-    }
-    builtins = 0;		/* was borrowed */
-  }
-  /*
-   * Call it.
-   */
-  module_dict = PyModule_GetDict(*user_module);
-  py_resultobj = PyRun_FileExFlags(
-      module_fp, module_path, Py_file_input, module_dict, module_dict, 1, 0);
-  module_fp = 0;		/* it was closed */
-  module_dict = 0;		/* was borrowed */
-  /*
-   * If that didn't work there was an exception.  Errk!
-   */
-  if (py_resultobj == 0)
-  {
-    pam_result = syslog_path_traceback(module_path, pamHandle);
-    goto error_exit;
-  }
+  
   pam_result = PAM_SUCCESS;
 
 error_exit:
-  py_xdecref(builtins);
-  py_xdecref(module_dict);
-  if (module_fp != 0)
-    fclose(module_fp);
-  if (user_module_name != 0)
-    free(user_module_name);
-  py_xdecref(py_resultobj);
+  py_xdecref(py_compiled_bundle);
+  py_xdecref(py_bundle_module);
   return pam_result;
 }
 
@@ -2305,13 +2250,15 @@ static PyObject* newSingletonObject(
  * works.
  */
 static int get_pamHandle(
-  PamHandleObject** result, pam_handle_t* pamh, const char** argv)
+  PamHandleObject** result, pam_handle_t* pamh)
 {
+  char			libpython_name[256] = "";
+  char          lib_search_path[] = LT_DLSEARCH_PATH"/lib:/lib32:/lib64:/usr/lib:/usr/lib32:usr/lib64";
+  char*			dir_name;
+  DIR*			dir;
+  struct dirent*	ent;
   void*			dlhandle = 0;
   int			do_initialize;
-  char*			module_dir;
-  char*			module_path = 0;
-  char*			module_data_name = 0;
   PyObject*		user_module = 0;
   PamEnvObject*		pamEnv = 0;
   PamHandleObject*	pamHandle = 0;
@@ -2321,38 +2268,9 @@ static int get_pamHandle(
   int			pam_result;
 
   /*
-   * Figure out where the module lives.
-   */
-  if (argv == 0 || argv[0] == 0)
-  {
-    syslog_path_message(MODULE_NAME, "python module name not supplied");
-    pam_result = PAM_MODULE_UNKNOWN;
-    goto error_exit;
-  }
-  if (argv[0][0] == '/')
-    module_dir = "";
-  else
-    module_dir = DEFAULT_SECURITY_DIR;
-  module_path = malloc(strlen(module_dir) + strlen(argv[0]) + 1);
-  if (module_path == 0)
-  {
-    syslog_path_message(MODULE_NAME, "out of memory");
-    pam_result = PAM_BUF_ERR;
-    goto error_exit;
-  }
-  strcat(strcpy(module_path, module_dir), argv[0]);
-  /*
    * See if we already exist.
    */
-  module_data_name = malloc(strlen(MODULE_NAME) + 1 + strlen(module_path) + 1);
-  if (module_data_name == 0)
-  {
-    syslog_path_message(MODULE_NAME, "out of memory");
-    pam_result = PAM_BUF_ERR;
-    goto error_exit;
-  }
-  strcat(strcat(strcpy(module_data_name, MODULE_NAME), "."), module_path);
-  pam_result = pam_get_data(pamh, module_data_name, (void*)result);
+  pam_result = pam_get_data(pamh, MODULE_NAME, (void*)result);
   if (pam_result == PAM_SUCCESS)
   {
     (*result)->pamh = pamh;
@@ -2360,16 +2278,37 @@ static int get_pamHandle(
     goto error_exit;
   }
   /*
-   * Initialize Python if required.
+   * Find and load python library
    */
-  dlhandle = dlopen(libpython_so, RTLD_NOW|RTLD_GLOBAL);
-  if (dlhandle == 0)
-  {
-    pam_result = syslog_path_message(
-        module_path,
-	"Can't load python library %s: %s", libpython_so, strerror(errno));
+  /* Search system library path */
+  dir_name = strtok(lib_search_path, ":");
+  while (dir_name != NULL && dlhandle == 0) {
+    if ((dir = opendir(dir_name)) != NULL) {
+      /* Search each file in directory */
+      while ((ent = readdir(dir)) != NULL) {
+        /* If it starts with libpython and has ".so" in it, try to dlopen it */
+        if (strncmp(LIBPYTHON_NAME, ent->d_name, strlen(LIBPYTHON_NAME)) == 0 &&
+            strstr(ent->d_name, ".so") != NULL) {
+          strncat(libpython_name, dir_name, sizeof(libpython_name)-strlen(libpython_name)-1);
+          strncat(libpython_name, "/", sizeof(libpython_name)-strlen(libpython_name)-1);
+          strncat(libpython_name, ent->d_name, sizeof(libpython_name)-strlen(libpython_name)-1);
+          dlhandle = dlopen(libpython_name, RTLD_NOW|RTLD_GLOBAL);
+          if (dlhandle != 0) {
+              break;
+          }
+        }
+      }
+      closedir(dir);
+    }
+    dir_name = strtok(NULL, ":");
+  }
+  if (dlhandle == 0) {
+    pam_result = syslog_path_message(MODULE_NAME, "Could not find a loadable python library");
     goto error_exit;
   }
+  /*
+   * Initialize Python if required.
+   */
   do_initialize = pypam_initialize_count > 0 || !Py_IsInitialized();
   if (do_initialize)
   {
@@ -2380,12 +2319,12 @@ static int get_pamHandle(
   /*
    * Create a throw away module because heap types need one, apparently.
    */
-  pamHandle_module = PyModule_New((char*)module_data_name);
+  pamHandle_module = PyModule_New((char*)MODULE_NAME);
   if (pamHandle_module == 0)
   {
     pam_result = syslog_path_exception(
-	module_path,
-	"PyModule_New(module_data_name) failed");
+	MODULE_NAME,
+	"PyModule_New(MODULE_NAME) failed");
     goto error_exit;
   }
   /*
@@ -2402,7 +2341,7 @@ static int get_pamHandle(
       PamHandle_Getset);		/* tp_getset */
   if (pamHandle == 0)
   {
-    pam_result = syslog_path_exception(module_path, "Can't create pamh Object");
+    pam_result = syslog_path_exception(MODULE_NAME, "Can't create pamh Object");
     goto error_exit;
   }
   if (PyObject_IS_GC((PyObject*)pamHandle))
@@ -2431,7 +2370,7 @@ static int get_pamHandle(
       0);				/* tp_getset */
   if (pamEnv == 0)
   {
-    pam_result = syslog_path_exception(module_path, "Can't create pamh.env");
+    pam_result = syslog_path_exception(MODULE_NAME, "Can't create pamh.env");
     goto error_exit;
   }
   pamEnv->ob_type->tp_as_mapping = &PamEnv_as_mapping;
@@ -2476,7 +2415,7 @@ static int get_pamHandle(
   if (pamHandle->message == 0)
   {
     pam_result = syslog_path_exception(
-        module_path, "Can't create pamh.Message");
+        MODULE_NAME, "Can't create pamh.Message");
     goto error_exit;
   }
   /*
@@ -2495,7 +2434,7 @@ static int get_pamHandle(
   if (pamHandle->response == 0)
   {
     pam_result = syslog_path_exception(
-        module_path,
+        MODULE_NAME,
 	"Can't create pamh.Response");
     goto error_exit;
   }
@@ -2514,7 +2453,7 @@ static int get_pamHandle(
   if (syslogFile == 0)
   {
     pam_result = syslog_path_exception(
-        module_path,
+        MODULE_NAME,
 	"Can't create pamh.syslogFile");
     goto error_exit;
   }
@@ -2529,7 +2468,7 @@ static int get_pamHandle(
   if (tracebackModule == 0)
   {
     pam_result = syslog_path_exception(
-        module_path,
+        MODULE_NAME,
 	"PyImport_ImportModule('traceback') failed");
     goto error_exit;
   }
@@ -2538,7 +2477,7 @@ static int get_pamHandle(
   if (pamHandle->print_exception == 0)
   {
     pam_result = syslog_path_exception(
-        module_path,
+        MODULE_NAME,
 	"PyObject_GetAttrString(traceback, 'print_exception') failed");
     goto error_exit;
   }
@@ -2559,13 +2498,13 @@ static int get_pamHandle(
   if (pamHandle->xauthdata == 0)
   {
     pam_result = syslog_path_exception(
-        module_path, "Can't create pamh.XAuthData");
+        MODULE_NAME, "Can't create pamh.XAuthData");
     goto error_exit;
   }
   /*
    * Now we have error reporting set up import the module.
    */
-  pam_result = load_user_module(&user_module, pamHandle, module_path);
+  pam_result = load_user_module(&user_module);
   if (pam_result != PAM_SUCCESS)
     goto error_exit;
   pamHandle->module = user_module;
@@ -2574,15 +2513,11 @@ static int get_pamHandle(
    * That worked.  Save a reference to it.
    */
   Py_INCREF(pamHandle);
-  pam_set_data(pamh, module_data_name, pamHandle, cleanup_pamHandle);
+  pam_set_data(pamh, MODULE_NAME, pamHandle, cleanup_pamHandle);
   *result = pamHandle;
   pamHandle = 0;
 
 error_exit:
-  if (module_path != 0)
-    free(module_path);
-  if (module_data_name != 0)
-    free(module_data_name);
   py_xdecref(user_module);
   py_xdecref((PyObject*)pamEnv);
   py_xdecref((PyObject*)pamHandle);
@@ -2600,6 +2535,9 @@ static int call_python_handler(
     PyObject* handler_function, const char* handler_name,
     int flags, int argc, const char** argv)
 {
+  PyObject*     handler_function_code = 0;
+  PyObject*     handler_function_code_argcount = 0;
+  long          handler_function_argcount = 0;
   PyObject*		arg_object = 0;
   PyObject*		argv_object = 0;
   PyObject*		flags_object = 0;
@@ -2611,27 +2549,45 @@ static int call_python_handler(
   if (!PyCallable_Check(handler_function))
   {
     pam_result =
-        syslog_message(pamHandle, "%s isn't a function.", handler_name);
+        syslog_message("%s isn't a function.", handler_name);
     goto error_exit;
   }
+
   /*
-   * Set up the arguments for the python function.  If we aren't passed
-   * argv then this is pam_sm_end() and it is only given pamh.
+   * Determin number of arguments for handler_function
    */
-  if (argv == 0)
+  handler_function_code = PyObject_GetAttrString(handler_function, "func_code");
+  if (handler_function_code != 0) {
+    handler_function_code_argcount =
+      PyObject_GetAttrString(handler_function_code, "co_argcount");
+  }
+  handler_function_argcount = PyInt_AsLong(handler_function_code_argcount);
+  if (handler_function_code_argcount == 0 ||
+      (handler_function_argcount == -1 && PyErr_Occurred())) {
+    pam_result =
+        syslog_message("could not determine argcount of handler_function");
+    goto error_exit;
+  }
+
+  /*
+   * Set up the arguments for the python function.  If argcount is one
+   * then this is pam_sm_end() and it is only given pamh.
+   */
+  if (handler_function_argcount == 1) {
     handler_args = Py_BuildValue("(O)", pamHandle);
-  else
+  }
+  else if (handler_function_argcount == 3)
   {
     flags_object = PyInt_FromLong(flags);
     if (flags_object == 0)
     {
-      pam_result = syslog_exception(pamHandle, "PyInt_FromLong(flags) failed");
+      pam_result = syslog_exception("PyInt_FromLong(flags) failed");
       goto error_exit;
     }
     argv_object = PyList_New(argc);
     if (argv_object == 0)
     {
-      pam_result = syslog_exception(pamHandle, "PyList_New(argc) failed");
+      pam_result = syslog_exception("PyList_New(argc) failed");
       goto error_exit;
     }
     for (i = 0; i < argc; i += 1)
@@ -2639,9 +2595,7 @@ static int call_python_handler(
       arg_object = PyString_FromString(argv[i]);
       if (arg_object == 0)
       {
-	pam_result = syslog_exception(
-	    pamHandle,
-	    "PyString_FromString(argv[i]) failed");
+	pam_result = syslog_exception("PyString_FromString(argv[i]) failed");
 	goto error_exit;
       }
       PyList_SET_ITEM(argv_object, i, arg_object);
@@ -2650,11 +2604,13 @@ static int call_python_handler(
     handler_args =
 	Py_BuildValue("OOO", pamHandle, flags_object, argv_object);
   }
+  else {
+    pam_result = syslog_message("handler function has unexpected argcount");
+    goto error_exit;
+  }
   if (handler_args == 0)
   {
-    pam_result = syslog_exception(
-        pamHandle,
-	"handler_args = Py_BuildValue(...) failed");
+    pam_result = syslog_exception("handler_args = Py_BuildValue(...) failed");
     goto error_exit;
   }
   /*
@@ -2674,6 +2630,8 @@ static int call_python_handler(
   pam_result = PAM_SUCCESS;
 
 error_exit:
+  py_xdecref(handler_function_code);
+  py_xdecref(handler_function_code_argcount);
   py_xdecref(arg_object);
   py_xdecref(argv_object);
   py_xdecref(flags_object);
@@ -2697,7 +2655,7 @@ static int call_handler(
   /*
    * Initialise Python, and get a copy of our object.
    */
-  pam_result = get_pamHandle(&pamHandle, pamh, argv);
+  pam_result = get_pamHandle(&pamHandle, pamh);
   if (pam_result != PAM_SUCCESS)
     goto error_exit;
   /*
@@ -2707,7 +2665,7 @@ static int call_handler(
       PyObject_GetAttrString(pamHandle->module, (char*)handler_name);
   if (handler_function == 0)
   {
-    syslog_message(pamHandle, "%s() isn't defined.", handler_name);
+    syslog_message("%s() isn't defined.", handler_name);
     pam_result = PAM_SYMBOL_ERR;
     goto error_exit;
   }
@@ -2721,13 +2679,11 @@ static int call_handler(
    */
   if (!PyInt_Check(py_resultobj) && !PyLong_Check(py_resultobj))
   {
-    pam_result = syslog_message(
-	pamHandle,
-	"%s() did not return an integer.", handler_name);
+    pam_result = syslog_message("%s() did not return an integer.", handler_name);
     goto error_exit;
   }
   pam_result = PyInt_AsLong(py_resultobj);
-
+  
 error_exit:
   py_xdecref(handler_function);
   py_xdecref((PyObject*)pamHandle);
