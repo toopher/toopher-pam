@@ -20,12 +20,12 @@ DEFAULT_FILENAME_SYSTEM_API_CREDENTIALS = os.path.join(SYSTEM_TOOPHER_CONFIG_DIR
 DEFAULT_FILENAME_SYSTEM_CONFIG = os.path.join(SYSTEM_TOOPHER_CONFIG_DIR, "config")
 DEFAULT_FILENAME_USER_CONFIG = ".toopher"
 
-CREDENTIAL_SPEC = StringIO.StringIO("""\
+CREDENTIAL_SPEC = """\
 key = string
 secret = string
-""")
+"""
 
-SYSTEM_CONFIG_SPEC = StringIO.StringIO("""\
+SYSTEM_CONFIG_SPEC = """\
 [API]
 credential-file = string(default='%s')
 base-url = string(default='https://api.toopher.com/v1/')
@@ -36,18 +36,21 @@ availability = option('none', 'available', 'groups', 'required', default='availa
 available-group = string(default='toopher-available')
 required-group = string(default='toopher-required')
 automation-allowed = boolean(default=false)
-""" % DEFAULT_FILENAME_SYSTEM_API_CREDENTIALS)
+""" % DEFAULT_FILENAME_SYSTEM_API_CREDENTIALS
 
-USER_CONFIG_SPEC = StringIO.StringIO("""\
+USER_CONFIG_SPEC = """\
 [Pairings]
 shared-pairing-id = string(default=None)
 __many__ = string
-""")
+"""
 
 HOSTNAME = socket.gethostname()
 
 
 def get_config(filename, configspec=None, log=lambda message: None):
+    if isinstance(configspec, basestring):
+        configspec = StringIO.StringIO(configspec)
+
     try:
         config = configobj.ConfigObj(filename,
                                      configspec=configspec,

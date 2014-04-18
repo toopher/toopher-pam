@@ -51,7 +51,6 @@ def pam_sm_authenticate(pamh, flags, argv):
     required = (availability == 'required' or
                 (availability == 'groups' and user_in_required_group))
     available = (required or
-                 availability != 'none' or
                  availability == 'available' or
                  (availability == 'groups' and user_in_available_group))
 

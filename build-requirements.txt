@@ -6,3 +6,4 @@ https://github.com/toopher/toopher-python/archive/7e9dacdb8980cc6b45eab9e831abe2
 configobj
 argparse
 PyInstaller
+mock
