@@ -21,7 +21,8 @@ def pam_sm_authenticate(pamh, flags, argv):
     try:
         sys_config = get_system_config(filename=DEFAULT_FILENAME_SYSTEM_CONFIG,
                                        log=lambda msg: syslog.syslog(SYSLOG_FACILITY|syslog.LOG_ALERT, msg))
-        api = get_api_object(sys_config)
+        api = get_api_object(sys_config,
+                             log=lambda msg: syslog.syslog(SYSLOG_FACILITY|syslog.LOG_ALERT, msg))
 
 
     except Exception, e:
