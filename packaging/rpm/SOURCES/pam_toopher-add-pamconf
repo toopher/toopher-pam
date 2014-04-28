@@ -1,12 +1,8 @@
 diff -rupN toopher-pam-1.0.0.orig/password+toopher-auth toopher-pam-1.0.0/password+toopher-auth
 --- toopher-pam-1.0.0.orig/password+toopher-auth	1970-01-01 00:00:00.000000000 +0000
 +++ toopher-pam-1.0.0/password+toopher-auth	2014-02-18 23:07:31.000000000 +0000
-@@ -0,0 +1,8 @@
+@@ -0,0 +1,4 @@
 +#%PAM-1.0
-+auth        substack      password-auth
-+auth        required      pam_toopher.so
-+
-+account	    include       password-auth
-+password    include       password-auth
-+session     include       password-auth
-+
++auth        required      pam_env.so
++auth        requisite     pam_unix.so nullok try_first_pass
++auth        required    pam_toopher.so
