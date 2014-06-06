@@ -43,17 +43,23 @@ def pam_sm_authenticate(pamh, flags, argv):
 
     required_group = sys_config_options[SYSTEM_CONFIG_OPTIONS_KEY_REQUIRED_GROUP]
     available_group = sys_config_options[SYSTEM_CONFIG_OPTIONS_KEY_AVAILABLE_GROUP]
+    excluded_group = sys_config_options[SYSTEM_CONFIG_OPTIONS_KEY_EXCLUDED_GROUP]
 
     username = pamh.get_user()
     users_groups = [g.gr_name for g in grp.getgrall() if username in g.gr_mem]
     user_in_required_group = required_group in users_groups
     user_in_available_group = available_group in users_groups
+    user_in_excluded_group = excluded_group in users_groups
 
-    required = (availability == 'required' or
-                (availability == 'groups' and user_in_required_group))
-    available = (required or
-                 availability == 'available' or
-                 (availability == 'groups' and user_in_available_group))
+    if user_in_excluded_group:
+        available = False
+        required = False
+    else:
+        required = (availability == 'required' or
+                    (availability == 'groups' and user_in_required_group))
+        available = (required or
+                     availability == 'available' or
+                     (availability == 'groups' and user_in_available_group))
 
     if not available:
         return pamh.PAM_IGNORE

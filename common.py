@@ -35,6 +35,7 @@ failure-policy = option('allow', 'deny', default='allow')
 availability = option('none', 'available', 'groups', 'required', default='available')
 available-group = string(default='toopher-available')
 required-group = string(default='toopher-required')
+excluded-group = string(default='toopher-excluded')
 automation-allowed = boolean(default=false)
 show-prompt = boolean(default=false)
 """ % DEFAULT_FILENAME_SYSTEM_API_CREDENTIALS
@@ -346,6 +347,7 @@ SYSTEM_CONFIG_OPTIONS_KEY_FAILURE_POLICY = 'failure-policy'
 SYSTEM_CONFIG_OPTIONS_KEY_AVAILABILITY = 'availability'
 SYSTEM_CONFIG_OPTIONS_KEY_AVAILABLE_GROUP = 'available-group'
 SYSTEM_CONFIG_OPTIONS_KEY_REQUIRED_GROUP = 'required-group'
+SYSTEM_CONFIG_OPTIONS_KEY_EXCLUDED_GROUP = 'excluded-group'
 SYSTEM_CONFIG_OPTIONS_KEY_AUTOMATION_ALLOWED = 'automation-allowed'
 SYSTEM_CONFIG_OPTIONS_KEY_SHOW_PROMPT = 'show-prompt'
 USER_CONFIG_PAIRINGS_SECTION = 'Pairings'

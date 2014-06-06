@@ -21,7 +21,7 @@ failure-policy = allow
 
 # Availability: Specifies which users have Toopher available as a PAM
 # authentication method.  Valid values are:
-#   * none: No users are allowed to use Toopher authentication.  The Toopher
+#   * none: Users are not allowed to use Toopher authentication.  The Toopher
 #	  authentication module will ignore all authentication requests
 #   * available [default]: The Toopher authentication module will use Toopher
 #     to authenticate users which have completed the pairing process.  The
@@ -42,6 +42,10 @@ available-group = toopher-available
 # specified group are treated as described in the 'required' section above.
 # The default value is 'toopher-required'.
 required-group = toopher-required
+
+# Excluded Group: Members of the specified group are treated as described in
+# the 'none' section above *regardless* of the availability setting.
+excluded-group = toopher-excluded
 
 # Automation Allowed: Allow users to automate the Toopher application's response
 # to requests based on the user's context (e.g. if the user is in the same
