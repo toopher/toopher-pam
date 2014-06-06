@@ -51,3 +51,7 @@ required-group = toopher-required
 # high enough confidence level to ensure security in all cases.  However, many
 # systems will find that automation can be safely enabled.
 automation-allowed = false
+
+# Show Prompt: Show a prompt to the user when performing an authentication request.
+# The default value is false.
+show-prompt = false

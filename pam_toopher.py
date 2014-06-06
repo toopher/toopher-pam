@@ -94,6 +94,10 @@ def pam_sm_authenticate(pamh, flags, argv):
     action_name = pamh.service
 
     try:
+        if sys_config_options[SYSTEM_CONFIG_OPTIONS_KEY_SHOW_PROMPT]:
+            pamh.conversation(pamh.Message(pamh.PAM_TEXT_INFO,
+                                           "Sending a Toopher authentication request...\n"))
+
         auth = api.authenticate(pairing_id=pairing_id,
                                 terminal_name=terminal_name,
                                 action_name=action_name,
