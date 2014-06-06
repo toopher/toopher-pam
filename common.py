@@ -169,19 +169,29 @@ class ApiHelper(object):
 
 def get_api_object(system_config, log=lambda message: None):
     try:
+        # Collect log messages (to be sent only if ApiHelper fallback fails)
+        collected_log_messages = []
+        def log_collector(message):
+            collected_log_messages.append(message)
+
         credential_filename = system_config[SYSTEM_CONFIG_API_SECTION][SYSTEM_CONFIG_API_KEY_CREDENTIAL_FILE]
-        credentials = get_credentials_config(credential_filename, log=log)
+        credentials = get_credentials_config(credential_filename, log=log_collector)
         key = credentials[CREDENTIAL_KEY_KEY]
         secret = credentials[CREDENTIAL_KEY_SECRET]
         base_url = system_config[SYSTEM_CONFIG_API_SECTION][SYSTEM_CONFIG_API_KEY_BASE_URL]
         return toopher.ToopherApi(key, secret, base_url)
     except Exception:  # Could not create a real API object, try helper
-        log("Trying helper utility to access credentials")
+        # Try helper utility to access credentials
         try:
-            return ApiHelper()
+            helper = ApiHelper()
+            del collected_log_messages[:]  # drain collected log messages since helper was successful
+            return helper
         except Exception, e:
-            log("Problem invoking helper: %s" % e)
+            log_collector("Could not fallback to API helper: %s" % e)
             raise
+    finally:
+        for log_message in collected_log_messages:
+            log(log_message)
 
 
 # Stolen from python 2.7's inspect module source code
