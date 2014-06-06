@@ -1,0 +1,17 @@
+toopher-pam (1.0.0-1) unstable; urgency=low
+
+  * Improved logging for API setup and configurable preauth prompt
+
+ -- Toopher, Inc. <dev@toopher.com>  Fri, 6 Jun 2014 14:57:27 +0000
+
+toopher-pam (0.9+1.0.0beta2-1) unstable; urgency=low
+
+  * Improved libpython search and dlopen
+
+ -- Toopher, Inc. <dev@toopher.com>  Thu, 21 Feb 2014 16:48:27 +0000
+
+toopher-pam (0.9+1.0.0beta1-1) unstable; urgency=low
+
+  * Beta for initial 1.0.0
+
+ -- Toopher, Inc. <dev@toopher.com>  Thu, 13 Feb 2014 22:25:27 +0000

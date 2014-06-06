@@ -1,0 +1,9 @@
+# This file lists the python packages required to build the python-based
+# artifacts. The packages can be installed with:
+#     pip install -r build-requirements.txt
+
+https://github.com/toopher/toopher-python/archive/7e9dacdb8980cc6b45eab9e831abe2a281037710.zip
+configobj
+argparse
+PyInstaller
+mock
