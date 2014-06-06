@@ -8,11 +8,14 @@
 # to perform Toopher API calls.
 credential-file = /etc/security/toopher/credentials
 
-# API Base URL: The Toopher API server to use for authentication requests.  Most can use the default of https://api.toopher.com/v1/
+# API Base URL: The Toopher API server to use for authentication requests.
+# Most can use the default of https://api.toopher.com/v1/
 base-url = https://api.toopher.com/v1/
 
 [Options]
-# Failure Policy: Determines the behavior of the authentication module if Toopher authentication cannot be completed for any reason (e.g. API server unreachable, misconfigured, etc.).  Valid values are:
+# Failure Policy: Determines the behavior of the authentication module if
+# Toopher authentication cannot be completed for any reason (e.g. API server
+# unreachable, misconfigured, etc.).  Valid values are:
 #   * allow [default]: Authentication requests are granted if an error
 #     condition is encountered
 #   * deny:  Authentication requests are rejected if an error condition is
