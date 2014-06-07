@@ -62,3 +62,11 @@ automation-allowed = false
 # Show Prompt: Show a prompt to the user when performing an authentication request.
 # The default value is false.
 show-prompt = false
+
+# Share Pairings: By default the `toopher-pair` utility will create pairings
+# specific to the host from which the utility is run.  If this option is set to
+# true then this changes that default behavior and the tool will create a non-host
+# specific pairing that can be shared by multiple hosts.  This is useful for
+# environments with many hosts that share user home directories and a single
+# Toopher configuration.  The default value is false.
+share-pairings = false
