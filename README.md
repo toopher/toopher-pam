@@ -7,7 +7,7 @@ toopher-pam
 Install
 -------
 
-Install using one of our pre-built [release packages](https://github.com/toopher/toopher-pam/releases), or [build it yourself](https://github.com/toopher/toopher-pam/blob/master/BUILD.md)
+Install using one of our pre-built [release packages](https://github.com/toopher/toopher-pam/releases), or [build it yourself](https://github.com/toopher/toopher-pam/blob/master/BUILD.md).
 
 Configure
 ---------
