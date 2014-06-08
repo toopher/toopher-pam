@@ -38,6 +38,7 @@ required-group = string(default='toopher-required')
 excluded-group = string(default='toopher-excluded')
 automation-allowed = boolean(default=false)
 show-prompt = boolean(default=false)
+share-pairings = boolean(default=false)
 """ % DEFAULT_FILENAME_SYSTEM_API_CREDENTIALS
 
 USER_CONFIG_SPEC = """\
@@ -350,5 +351,6 @@ SYSTEM_CONFIG_OPTIONS_KEY_REQUIRED_GROUP = 'required-group'
 SYSTEM_CONFIG_OPTIONS_KEY_EXCLUDED_GROUP = 'excluded-group'
 SYSTEM_CONFIG_OPTIONS_KEY_AUTOMATION_ALLOWED = 'automation-allowed'
 SYSTEM_CONFIG_OPTIONS_KEY_SHOW_PROMPT = 'show-prompt'
+SYSTEM_CONFIG_OPTIONS_KEY_SHARE_PAIRINGS = 'share-pairings'
 USER_CONFIG_PAIRINGS_SECTION = 'Pairings'
 USER_CONFIG_PAIRINGS_KEY_SHARED_PAIRING_ID = 'shared-pairing-id'
