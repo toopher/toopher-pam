@@ -115,8 +115,10 @@ def get_dependencies_for_script_name(script_name):
     for name in dependency_names:
         dependency = tracker.modules[name]
         try:
-            if 'site-packages' in dependency.__file__ or 'python2' not in dependency.__file__: # TODO: better way?
-                dependencies[name] = (dependency.ispackage(), dependency.co)
+            if ('site-packages' in dependency.__file__ or
+                'dist-packages' in dependency.__file__ or
+                'python2' not in dependency.__file__): # TODO: better way?
+                    dependencies[name] = (dependency.ispackage(), dependency.co)
         except Exception:
             pass
 
