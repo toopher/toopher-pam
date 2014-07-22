@@ -1,3 +1,9 @@
+toopher-pam (1.1.1) precise; urgency=low
+
+  * Fix conflicting options error in toopher-pair utility
+
+ -- Toopher, Inc. <dev@toopher.com>  Mon, 21 Jul 2014 23:36:32 +0000
+
 toopher-pam (1.1.0) precise; urgency=low
 
   * Add configuration option for default pairing type
