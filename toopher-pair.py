@@ -42,7 +42,7 @@ def main():
     pairing_type_group = argparser.add_mutually_exclusive_group()
     pairing_type_group.add_argument('--shared', '-s', action="store_true",
                                     help="create a shared pairing instead of a host-specific pairing")
-    pairing_type_group.add_argument('--host-specific', '-p', action="store_true",
+    pairing_type_group.add_argument('--host-specific', '-o', action="store_true",
                                     help="create a host-specific pairing instead of a shared pairing (this is the "
                                          "default unless otherwise specified in the system configuration file)")
     argparser.add_argument('--phrase', '-p', metavar="PAIRING_PHRASE",
