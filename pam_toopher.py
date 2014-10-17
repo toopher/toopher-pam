@@ -4,6 +4,7 @@ import toopher
 import syslog
 import time
 import grp
+import pwd
 
 from common import *
 
@@ -46,7 +47,23 @@ def pam_sm_authenticate(pamh, flags, argv):
     excluded_group = sys_config_options[SYSTEM_CONFIG_OPTIONS_KEY_EXCLUDED_GROUP]
 
     username = pamh.get_user()
-    users_groups = [g.gr_name for g in grp.getgrall() if username in g.gr_mem]
+    users_groups = []
+
+    # Add user's group as found in the password database
+    try:
+        user_group_id = pwd.getpwnam(username).pw_gid
+        user_group = grp.getgrgid(user_group_id).gr_name
+        if user_group:
+            users_groups.append(user_group)
+    except Exception, e:
+        pass
+
+    # Add user's supplemental groups as found in the groups database
+    try:
+        users_groups.extend([g.gr_name for g in grp.getgrall() if username in g.gr_mem])
+    except Exception, e:
+        pass
+
     user_in_required_group = required_group in users_groups
     user_in_available_group = available_group in users_groups
     user_in_excluded_group = excluded_group in users_groups
