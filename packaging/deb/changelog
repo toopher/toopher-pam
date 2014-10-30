@@ -1,3 +1,10 @@
+toopher-pam (1.1.3) precise; urgency=low
+
+  * This patch release number is unchanged from 1.1.2 (it only applies to
+    RHEL)
+
+ -- Toopher, Inc. <dev@toopher.com>  Mon, 17 Oct 2014 18:03:32 +0000
+
 toopher-pam (1.1.2) precise; urgency=low
 
   * Add user's own group to list of groups used for membership checks
