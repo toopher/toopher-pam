@@ -28,7 +28,8 @@ authentication by any program supporting PAM.
 %patch -p1
 
 %build
-%configure --with-admin-group=vagrant
+user=$(whoami)
+%configure --with-admin-group=$user
 make
 
 %pre
