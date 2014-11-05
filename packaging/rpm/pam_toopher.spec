@@ -28,7 +28,8 @@ authentication by any program supporting PAM.
 %patch -p1
 
 %build
-%configure --with-admin-group=vagrant
+user=$(whoami)
+%configure --with-admin-group=$user
 make
 
 %pre
@@ -39,6 +40,9 @@ rm -rf %{buildroot}
 make install DESTDIR=%{buildroot}
 install -d %{buildroot}/etc/pam.d
 install password+toopher-auth %{buildroot}/etc/pam.d/
+install -d %{buildroot}/etc/prelink.conf.d
+echo '-b /usr/bin/toopher-pair' >> %{buildroot}/etc/prelink.conf.d/%{name}.conf
+echo '-b /usr/bin/toopher-api-helper' >> %{buildroot}/etc/prelink.conf.d/%{name}.conf
 
 %clean
 rm -rf %{buildroot}
@@ -53,6 +57,7 @@ rm -rf %{buildroot}
 /%{_lib}/security/pam_toopher.so
 %attr(2755, root, toopher-admin) %{_bindir}/toopher-api-helper
 %{_bindir}/toopher-pair
+%{_sysconfdir}/prelink.conf.d/%{name}.conf
 
 %changelog
 
